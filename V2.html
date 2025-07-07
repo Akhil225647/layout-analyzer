@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layout Analyzer Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-start: #4338ca; /* Indigo 700 */
+            --primary-end: #6d28d9;   /* Purple 700 */
+            --secondary-start: #059669; /* Emerald 600 */
+            --secondary-end: #10b981;   /* Emerald 500 */
+            --background-color: #f8fafc;
+            --card-background: #ffffff;
+            --text-color: #111827; /* Gray 900 */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            background-image: radial-gradient(#eef2ff 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: var(--text-color);
+        }
+        .step-card {
+            background-color: var(--card-background);
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .step-card.is-visible { opacity: 1; transform: translateY(0); }
+        .file-drop-zone { border: 2px dashed #cbd5e1; transition: all 0.3s ease; }
+        .file-drop-zone.dragover { border-color: var(--primary-start); background-color: #f5f3ff; transform: scale(1.02); }
+        .file-drop-zone.has-file { border-color: var(--secondary-start); background-color: #f0fdfa; }
+        .btn { transition: all 0.3s ease; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 7px 20px -4px rgb(0 0 0 / 0.2); }
+        .sql-box { background-color: #020617; color: #e2e8f0; font-family: 'Fira Code', monospace; border: 1px solid #1e293b; }
+        .sql-box .copy-btn { background-color: #4f46e5; color: white; transition: background-color 0.2s; }
+        .sql-box .copy-btn:hover { background-color: #4338ca; }
+        .table-container { max-height: 80vh; overflow: auto; border-radius: 0.5rem; }
+        thead th { position: sticky; top: 0; z-index: 10; background-color: #f9fafb; border-bottom: 2px solid #e5e7eb; }
+        .section-header > th { position: sticky; top: 52px; z-index: 9; }
+        .tooltip { position: relative; cursor: help; border-bottom: 1px dotted #6b7280; }
+        .tooltip .tooltiptext { visibility: hidden; width: 120px; background-color: #1f2937; color: #fff; text-align: center; border-radius: 6px; padding: 5px 0; position: absolute; z-index: 50; bottom: 125%; left: 50%; margin-left: -60px; opacity: 0; transition: opacity 0.3s; }
+        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+        .progress-bar { background-image: linear-gradient(to right, #818cf8, #4f46e5); transition: width 0.5s ease; }
+        @keyframes pop-in { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
+        .final-animation { animation: pop-in 0.5s ease-out forwards; }
+        .chart-bar { background-color: var(--primary-start); transition: width 1s ease-out; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 md:p-6 max-w-screen-2xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-700 to-purple-700">Layout Analyzer Pro</h1>
+            <p class="text-md text-gray-600 mt-2">The definitive utility for deep layout analysis and documentation.</p>
+        </header>
+
+        <div id="progress-container" class="mb-8 hidden">
+             <div class="flex justify-between mb-1"><span id="progress-text" class="text-base font-medium text-indigo-700"></span><span id="progress-percent" class="text-sm font-medium text-indigo-700"></span></div>
+             <div class="w-full bg-gray-200 rounded-full h-2.5"><div id="progress-bar" class="progress-bar h-2.5 rounded-full"></div></div>
+        </div>
+
+        <main id="main-content" class="space-y-8">
+            </main>
+    </div>
+
+<script>
+// --- TEMPLATES AND ICONS (SINGLE-FILE WORKFLOW) ---
+const TEMPLATES = {
+    step1: `<h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Step 1: Provide Layout ID(s)</h2><p class="text-gray-600 mb-4">Enter the numeric CRMNext Layout ID for each layout you want to analyze, separated by commas.</p><div class="flex items-center space-x-4"><input id="layout-id-input" placeholder="e.g., 317492, 317493" class="flex-grow p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"><button id="generate-layout-query-btn" class="px-6 py-2.5 bg-gradient-to-r from-indigo-700 to-purple-700 text-white font-semibold rounded-lg shadow-md btn" disabled>Generate Query</button></div>`,
+    step2: `<h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Step 2: Fetch Combined Data</h2><p class="text-gray-600 mb-4">Run this single query on your database. The result will be one row with one column containing all required XML data. Copy the entire XML content from that cell and save it as a file named <code>Combined_Data.xml</code>.</p><div class="relative"><pre class="sql-box p-4 rounded-lg overflow-x-auto"></pre><button class="copy-btn absolute top-3 right-3 px-3 py-1.5 font-semibold rounded-md flex items-center space-x-1.5 bg-indigo-600 text-white hover:bg-indigo-700 btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg><span>Copy</span></button></div>`,
+    step3: `<h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Step 3: Upload Combined XML</h2><div class="file-drop-zone rounded-lg p-6 text-center cursor-pointer"><input type="file" class="hidden" accept=".xml" /><div class="flex justify-center items-center text-gray-400"></div><h3 class="font-semibold text-gray-700 mt-2">Combined Data File</h3><p class="text-sm text-gray-500 mt-1">Click or drop <code>Combined_Data.xml</code> here</p></div>`,
+    finalAnimation: `<div id="final-step-animation" class="final-animation text-center py-10"><div class="inline-block bg-gradient-to-br from-secondary-start to-secondary-end p-4 rounded-full shadow-lg"><svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div><p class="mt-4 text-xl font-semibold text-gray-700">Analysis Complete! Generating Report...</p></div>`,
+    results: `<div class="flex flex-col md:flex-row justify-between items-center mb-6"><h2 class="text-3xl font-bold text-gray-800">Analysis Report</h2><div class="flex items-center space-x-3 mt-4 md:mt-0"><button id="clear-btn" class="px-5 py-2.5 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 btn">Start Over</button><button id="download-csv-btn" class="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 text-white font-semibold rounded-lg shadow-md btn">Download CSV</button><button id="download-excel-btn" class="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 text-white font-semibold rounded-lg shadow-md btn">Download Excel</button></div></div><div id="dashboard" class="mb-8"></div><div id="filter-bar" class="bg-gray-50 p-4 rounded-lg mb-6 border flex flex-wrap items-center gap-4"></div><div class="table-container border border-gray-200 shadow-sm"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider align-bottom">Layout Label</th><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider align-bottom">DB Field Label</th><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider align-bottom">Field ID</th><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider align-bottom">Data Type</th><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider align-bottom">Length</th><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider align-bottom">Column Name</th><th colspan="3" class="px-2 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-l border-r"><div class="tooltip">New / Edit<span class="tooltiptext">Properties on the data entry / creation form.</span></div></th><th colspan="3" class="px-2 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-r"><div class="tooltip">Detail<span class="tooltiptext">Properties on the read-only details page.</span></div></th><th colspan="3" class="px-2 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-r"><div class="tooltip">History<span class="tooltiptext">Properties on the record history page.</span></div></th></tr><tr><th class="px-2 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-l"><div class="tooltip">Req?<span class="tooltiptext">Is the field Required?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider"><div class="tooltip">RO?<span class="tooltiptext">Is the field Read-Only?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-r"><div class="tooltip">Hid?<span class="tooltiptext">Is the field Hidden?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider"><div class="tooltip">Req?<span class="tooltiptext">Is the field Required?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider"><div class="tooltip">RO?<span class="tooltiptext">Is the field Read-Only?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-r"><div class="tooltip">Hid?<span class="tooltiptext">Is the field Hidden?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider"><div class="tooltip">Req?<span class="tooltiptext">Is the field Required?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider"><div class="tooltip">RO?<span class="tooltiptext">Is the field Read-Only?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-r"><div class="tooltip">Hid?<span class="tooltiptext">Is the field Hidden?</span></div></th></tr></thead><tbody id="results-table-body" class="bg-white divide-y divide-gray-200"></tbody></table></div>`
+};
+const ICONS = {
+    upload: `<svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>`,
+    success: `<svg class="w-12 h-12 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
+};
+
+const UI = {
+    mainContainer: document.getElementById('main-content'),
+    progressContainer: document.getElementById('progress-container'),
+    progressBar: document.getElementById('progress-bar'),
+    progressText: document.getElementById('progress-text'),
+    progressPercent: document.getElementById('progress-percent'),
+    
+    createStep(id, content) {
+        const card = document.createElement('section');
+        card.id = `step-${id}`;
+        card.className = 'step-card p-6';
+        card.innerHTML = content;
+        this.mainContainer.appendChild(card);
+        setTimeout(() => card.classList.add('is-visible'), 50);
+        return card;
+    },
+
+    updateProgress(step, totalSteps, text) {
+        this.progressContainer.classList.remove('hidden');
+        const percent = Math.round((step / totalSteps) * 100);
+        this.progressBar.style.width = `${percent}%`;
+        this.progressText.textContent = `Step ${step} of ${totalSteps}: ${text}`;
+        this.progressPercent.textContent = `${percent}%`;
+    },
+
+    updateFileDropzone(dropzone, fileName) {
+        dropzone.querySelector('div').innerHTML = ICONS.success;
+        dropzone.querySelector('p').textContent = fileName;
+        dropzone.classList.add('has-file');
+    },
+
+    copyToClipboard(text, buttonElement) {
+        navigator.clipboard.writeText(text).then(() => {
+            const originalHTML = buttonElement.innerHTML;
+            buttonElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>Copied!</span>`;
+            setTimeout(() => { buttonElement.innerHTML = originalHTML; }, 2000);
+        }).catch(err => alert('Failed to copy text.'));
+    },
+    
+    showFinalAnimation(callback) {
+        const animationEl = UI.createStep('final', TEMPLATES.finalAnimation);
+        setTimeout(() => {
+            animationEl.remove();
+            callback();
+        }, 1500);
+    },
+
+    renderResults(data, allData) {
+        let resultsCard = document.getElementById('step-results');
+        if (!resultsCard) {
+            resultsCard = this.createStep('results', TEMPLATES.results);
+            UI.renderDashboard(resultsCard.querySelector('#dashboard'), App.state);
+            UI.renderFilters(resultsCard.querySelector('#filter-bar'), allData, () => App.handleFilterChange());
+        }
+        
+        const tableBody = resultsCard.querySelector('#results-table-body');
+        tableBody.innerHTML = '';
+        
+        const groupedData = data.reduce((acc, item) => {
+            (acc[item.section] = acc[item.section] || []).push(item);
+            return acc;
+        }, {});
+
+        for (const section in groupedData) {
+            const headerRow = tableBody.insertRow();
+            headerRow.className = "bg-slate-100 section-header";
+            headerRow.innerHTML = `<th colspan="15" class="px-4 py-2 text-left text-sm font-bold text-slate-700">${section}</th>`;
+            
+            groupedData[section].forEach(item => {
+                const row = tableBody.insertRow();
+                row.className = item.dependencyCondition ? 'dependent-row' : 'hover:bg-gray-50';
+                
+                const NA = { isRequired: '-', isReadOnly: '-', isHidden: '-' };
+                const newEdit = item.layouts.newEdit || NA;
+                const detail = item.layouts.detail || NA;
+                const history = item.layouts.history || NA;
+                const db = item.dbInfo || {};
+
+                row.innerHTML = `
+                    <td class="px-4 py-3 text-sm font-medium text-gray-800">${item.layoutLabel}</td>
+                    <td class="px-4 py-3 text-sm text-gray-500">${db.Label || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-500">${item.fieldId}</td>
+                    <td class="px-4 py-3 text-sm text-gray-500">${db.FieldType || 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-500 text-center">${db.Length || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-500">${db.ColumnName || 'N/A'}</td>
+                    <td class="px-2 py-3 text-center text-sm border-l">${newEdit.isRequired}</td>
+                    <td class="px-2 py-3 text-center text-sm">${newEdit.isReadOnly}</td>
+                    <td class="px-2 py-3 text-center text-sm border-r">${newEdit.isHidden}</td>
+                    <td class="px-2 py-3 text-center text-sm">${detail.isRequired}</td>
+                    <td class="px-2 py-3 text-center text-sm">${detail.isReadOnly}</td>
+                    <td class="px-2 py-3 text-center text-sm border-r">${detail.isHidden}</td>
+                    <td class="px-2 py-3 text-center text-sm">${history.isRequired}</td>
+                    <td class="px-2 py-3 text-center text-sm">${history.isReadOnly}</td>
+                    <td class="px-2 py-3 text-center text-sm border-r">${history.isHidden}</td>`;
+
+                if ((item.lovs.database && item.lovs.database.length > 0 && item.lovs.database[0]) || item.dependencyCondition) {
+                    const detailRow = tableBody.insertRow();
+                    detailRow.className = 'details-row' + (item.dependencyCondition ? ' dependent-row' : '');
+                    const cell = detailRow.insertCell();
+                    cell.colSpan = 15;
+                    cell.className = "px-6 py-4 bg-slate-50";
+
+                    const dbLovs = item.lovs.database ? `<li><strong class="text-slate-800">Database LOVs:</strong><div class="text-xs pl-2 text-slate-600">${item.lovs.database.join(' | ')}</div></li>` : '';
+                    const layoutLovs = item.lovs.layout ? `<li><strong class="text-slate-800">Layout Visibility:</strong><div class="text-xs pl-2 text-slate-600">${item.lovs.layout.join(' | ')}</div></li>` : '';
+                    const depLovs = item.lovs.dependency ? `<li><strong class="text-slate-800">Dependency Triggers:</strong><div class="text-xs pl-2 text-slate-600">${item.lovs.dependency.join(' | ')}</div></li>` : '';
+                    const depInfo = item.dependencyCondition ? `<strong class="text-indigo-700">Child Of:</strong> ${item.dependencyCondition}` : '';
+                    
+                    cell.innerHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div><ul class="space-y-1.5">${dbLovs}${layoutLovs}${depLovs}</ul></div>
+                            <div class="font-medium text-indigo-600 self-center">${depInfo}</div>
+                        </div>`;
+                }
+            });
+        }
+    },
+    
+    renderDashboard(container, state) {
+        const createStatCard = (label, value) => `<div class="p-4 bg-slate-50 rounded-lg text-center"><p class="text-2xl font-bold text-indigo-600" data-countup="${value}">0</p><p class="text-sm font-medium text-gray-500">${label}</p></div>`;
+        const sectionsData = state.finalData.reduce((acc, item) => { acc[item.section] = (acc[item.section] || 0) + 1; return acc; }, {});
+        const maxSectionCount = Math.max(...Object.values(sectionsData), 1);
+        const chartHTML = Object.entries(sectionsData).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => `
+            <div class="flex items-center text-sm"><div class="w-1/3 text-gray-600 truncate pr-2">${name}</div>
+            <div class="w-2/3 bg-gray-200 rounded-full h-4"><div class="chart-bar h-4 rounded-full flex items-center justify-end pr-2 text-white font-bold text-xs" style="width: 0%;" data-chart-width="${(count/maxSectionCount)*100}"></div></div></div>
+        `).join('');
+        const profileMappingHTML = Array.from(state.profileMapping.values()).map(p => `<tr><td class="px-3 py-1.5 text-sm font-semibold text-gray-700">${p.Profile}</td><td class="px-3 py-1.5 text-sm text-gray-500">${p.Type}</td><td class="px-3 py-1.5 text-sm text-gray-500">${p.GroupID}</td></tr>`).join('');
+
+        container.innerHTML = `
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2"><h3 class="text-lg font-bold text-gray-700 mb-3">Key Statistics</h3><div id="stats-card" class="grid grid-cols-2 md:grid-cols-4 gap-4">${createStatCard('Total Fields', state.finalData.length)}${createStatCard('Custom Fields', state.finalData.filter(f => f.originalId.startsWith('cust_')).length)}${createStatCard('Custom Buttons', state.buttons.size)}${createStatCard('UI Cards', state.cards.size)}</div></div>
+                <div><h3 class="text-lg font-bold text-gray-700 mb-3">Profile to GroupID Mapping</h3><table class="w-full text-left"><tbody>${profileMappingHTML}</tbody></table></div>
+                <div class="lg:col-span-3"><h3 class="text-lg font-bold text-gray-700 mb-3">Top 5 Sections by Field Count</h3><div class="space-y-2">${chartHTML}</div></div>
+            </div>`;
+        
+        container.querySelectorAll('[data-countup]').forEach(el => this.countUp(el));
+        setTimeout(() => { container.querySelectorAll('[data-chart-width]').forEach(el => { el.style.width = el.dataset.chartWidth + '%'; }); }, 100);
+    },
+
+    countUp(el) {
+        const endValue = parseInt(el.dataset.countup, 10);
+        if (isNaN(endValue)) return;
+        let start = 0;
+        const duration = 1500;
+        const stepTime = Math.max(1, Math.abs(Math.floor(duration / endValue)));
+        const timer = setInterval(() => {
+            start += 1;
+            el.textContent = start;
+            if (start >= endValue) {
+                el.textContent = endValue;
+                clearInterval(timer);
+            }
+        }, stepTime);
+    },
+
+    renderFilters(container, data, changeCallback) {
+        const sections = [...new Set(data.map(item => item.section))].sort();
+        container.innerHTML = `<span class="font-semibold text-gray-700 self-center">Filters:</span>`;
+        let options = '<option value="">All Sections</option>' + sections.map(s => `<option value="${s}">${s}</option>`).join('');
+        container.innerHTML += `<div><label class="sr-only" for="filter-section">Section</label><select id="filter-section" class="p-2 border border-gray-300 rounded-md text-sm">${options}</select></div>`;
+        container.innerHTML += `<div><label class="sr-only" for="filter-type">Field Type</label><select id="filter-type" class="p-2 border border-gray-300 rounded-md text-sm"><option value="">All Types</option><option value="custom">Custom</option><option value="system">System</option></select></div>`;
+        container.innerHTML += `<div><label class="sr-only" for="filter-mandatory">Requirement</label><select id="filter-mandatory" class="p-2 border border-gray-300 rounded-md text-sm"><option value="">All Requirements</option><option value="yes">Mandatory Only</option></select></div>`;
+        container.querySelectorAll('select').forEach(sel => sel.addEventListener('change', changeCallback));
+    }
+};
+
+const App = {
+    state: {},
+    init() { this.reset(); },
+    reset() {
+        this.state = { layoutIds: [], masterFieldMap: null, finalData: [], uiTabs: null, cards: null, buttons: null, profileMapping: null };
+        UI.mainContainer.innerHTML = '';
+        UI.progressContainer.classList.add('hidden');
+        this.renderStep1();
+    },
+    renderStep(id, template) {
+        const card = UI.createStep(id, template);
+        card.querySelectorAll('.copy-btn').forEach(btn => btn.addEventListener('click', e => {
+            const pre = e.target.closest('.relative').querySelector('pre');
+            if(pre) UI.copyToClipboard(pre.textContent, e.target.closest('button'));
+        }));
+        return card;
+    },
+    renderStep1() {
+        UI.updateProgress(1, 3, 'Awaiting Layout IDs');
+        const card = this.renderStep(1, TEMPLATES.step1);
+        const input = card.querySelector('input'), button = card.querySelector('button');
+        input.addEventListener('input', () => { button.disabled = input.value.trim() === ''; });
+        button.addEventListener('click', () => this.handleLayoutQuery(input.value));
+    },
+    handleLayoutQuery(idValue) {
+        this.state.layoutIds = idValue.trim().split(',').map(id => id.trim()).filter(id => id);
+        if (this.state.layoutIds.length === 0) return;
+        
+        UI.updateProgress(2, 3, 'Generating Combined Query');
+        const card = this.renderStep(2, TEMPLATES.step2);
+        card.querySelector('pre').textContent = SQLGenerator.combinedQuery(this.state.layoutIds.join(','));
+        
+        this.renderUploadStep();
+    },
+    renderUploadStep() {
+        UI.updateProgress(2, 3, 'Awaiting Combined XML...');
+        const card = this.renderStep(3, TEMPLATES.step3);
+        const dropzone = card.querySelector('.file-drop-zone'), input = card.querySelector('input');
+        dropzone.querySelector('div').innerHTML = ICONS.upload;
+        this.setupFileHandler(dropzone, input, this.handleCombinedFile);
+    },
+    async handleCombinedFile(file) {
+        UI.updateFileDropzone(document.querySelector('#step-3 .file-drop-zone'), file.name);
+        try {
+            const parsedResult = await ParserWorker.run('parseCombined', await file.text());
+            
+            this.state.masterFieldMap = parsedResult.masterFieldMap;
+            this.state.uiTabs = parsedResult.uiTabs;
+            this.state.cards = parsedResult.cards;
+            this.state.buttons = parsedResult.buttons;
+            this.state.profileMapping = parsedResult.profileMapping;
+
+            this.finalizeData(parsedResult.dbData);
+            
+            UI.updateProgress(3, 3, 'Analysis Complete!');
+            UI.showFinalAnimation(() => {
+                const resultsCard = UI.createStep('results', TEMPLATES.results);
+                UI.renderDashboard(resultsCard.querySelector('#dashboard'), this.state);
+                UI.renderFilters(resultsCard.querySelector('#filter-bar'), this.state.finalData, () => this.handleFilterChange());
+                UI.renderResults(this.state.finalData, this.state.finalData);
+                resultsCard.querySelector('#clear-btn').addEventListener('click', () => this.reset());
+                resultsCard.querySelector('#download-csv-btn').addEventListener('click', () => Exporter.download('csv', this.state.finalData));
+                resultsCard.querySelector('#download-excel-btn').addEventListener('click', () => Exporter.download('excel', this.state));
+            });
+        } catch (error) { this.handleError(error, 3); }
+    },
+    finalizeData(dbData) {
+        this.state.masterFieldMap.forEach(field => {
+            if (dbData.has(field.fieldId)) field.dbInfo = dbData.get(field.fieldId);
+            if (field.dbInfo?.LOVS) field.lovs.database = field.dbInfo.LOVS;
+            if (field.visibilityOptions) field.lovs.layout = field.visibilityOptions;
+            if (field.dependencies.length > 0) field.lovs.dependency = [...new Set(field.dependencies.map(d => d.onValue))];
+        });
+        const finalData = [], processed = new Set(), childOriginalIds = new Set();
+        this.state.masterFieldMap.forEach(field => { field.dependencies.forEach(dep => dep.childFields.forEach(childId => childOriginalIds.add(childId))) });
+        const processField = (field) => {
+            if (processed.has(field.fieldId)) return;
+            processed.add(field.fieldId);
+            finalData.push(field);
+            field.dependencies.forEach(dep => {
+                const layoutContext = [...new Set(field.dependencyContexts)].join(', ');
+                dep.childFields.forEach(childOriginalId => {
+                    const childId = childOriginalId.startsWith('cust_') ? childOriginalId.replace('cust_', '') : childOriginalId;
+                    if (this.state.masterFieldMap.has(childId)) {
+                        const childField = this.state.masterFieldMap.get(childId);
+                        childField.dependencyCondition = `On '${field.layoutLabel}' = '${dep.onValue}' (in ${layoutContext})`;
+                        processField(childField);
+                    }
+                });
+            });
+        };
+        this.state.masterFieldMap.forEach(field => { if (!childOriginalIds.has(field.originalId)) processField(field); });
+        this.state.finalData = finalData;
+    },
+    handleFilterChange() {
+        const filters = {
+            section: document.getElementById('filter-section').value,
+            type: document.getElementById('filter-type').value,
+            mandatory: document.getElementById('filter-mandatory').value,
+        };
+        const filteredData = this.state.finalData.filter(item => {
+            const sectionMatch = !filters.section || item.section === filters.section;
+            const typeMatch = !filters.type || (filters.type === 'custom' ? item.originalId.startsWith('cust_') : !item.originalId.startsWith('cust_'));
+            const mandatoryMatch = !filters.mandatory || (item.layouts.newEdit?.isRequired === 'Yes');
+            return sectionMatch && typeMatch && mandatoryMatch;
+        });
+        UI.renderResults(filteredData, this.state.finalData);
+    },
+    handleError(error, step) {
+        alert(`An error occurred at Step ${step}: ${error.message}\nRestarting the process.`);
+        console.error(error);
+        this.reset();
+    },
+    setupFileHandler(dropzone, input, callback) {
+        dropzone.addEventListener('click', () => input.click());
+        input.addEventListener('change', e => e.target.files[0] && callback.call(this, e.target.files[0]));
+        dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+        dropzone.addEventListener('dragleave', e => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+        dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('dragover'); e.dataTransfer.files[0] && callback.call(this, e.dataTransfer.files[0]); });
+    }
+};
+
+const SQLGenerator = {
+    combinedQuery(ids) {
+        // This multi-step SQL script is designed to be fully backward-compatible.
+        // It avoids modern functions like STRING_SPLIT and STRING_AGG.
+        return `-- Set your comma-separated Layout IDs here.
+DECLARE @LayoutIDs NVARCHAR(MAX) = '${ids}';
+
+-- ####################################################################
+-- INTERNAL SCRIPT - DO NOT MODIFY BELOW THIS LINE
+-- ####################################################################
+
+DECLARE @LayoutXML XML;
+DECLARE @FieldXML XML;
+DECLARE @CustomFieldIDs TABLE (FieldID INT PRIMARY KEY);
+DECLARE @RawEncodedXML NVARCHAR(MAX);
+
+-- Step 1: Get Raw HTML-encoded LayoutXML from a primary layout to find field IDs.
+-- Using LayoutType = 1 (New/Edit) as the base for finding fields.
+SELECT @RawEncodedXML = CAST(LayoutXML AS NVARCHAR(MAX))
+FROM LayoutGroupView
+WHERE LayoutID IN (
+    SELECT T.c.value('.', 'INT') FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B) CROSS APPLY A.B.nodes('/ID') AS T(c)
+) AND LayoutType = 1;
+
+-- Step 2: Manually decode the HTML-encoded XML to prepare for parsing.
+DECLARE @DecodedLayoutXML XML;
+SET @DecodedLayoutXML = CAST(REPLACE(REPLACE(REPLACE(REPLACE(@RawEncodedXML, '&lt;', '<'), '&gt;', '>'), '&quot;', '"'), '&amp;', '&') AS XML);
+
+-- Step 3: Extract all unique custom field IDs from the decoded XML.
+INSERT INTO @CustomFieldIDs (FieldID)
+SELECT DISTINCT
+    TRY_CAST(REPLACE(T.c.value('@fieldid', 'NVARCHAR(100)'), 'cust_', '') AS INT)
+FROM @DecodedLayoutXML.nodes('//col[@fieldid]') AS T(c)
+WHERE T.c.value('@fieldid', 'NVARCHAR(100)') LIKE 'cust_%'
+  AND ISNUMERIC(REPLACE(T.c.value('@fieldid', 'NVARCHAR(100)'), 'cust_', '')) = 1;
+
+-- Step 4: Get the complete, properly-formed Layout XML for all specified layouts and types.
+SET @LayoutXML = (
+    SELECT (
+        SELECT (
+            SELECT LayoutXML FROM LayoutGroupView
+            WHERE LayoutType = 1 AND LayoutID IN (SELECT T.c.value('.', 'INT') FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B) CROSS APPLY A.B.nodes('/ID') AS T(c))
+            FOR XML PATH('Layout'), ROOT('NewEditLayouts'), TYPE
+        ) AS [NewEditLayouts],
+        (
+            SELECT GroupID AS [@GroupID], (
+                SELECT LayoutXML FROM LayoutGroupView AS DL2
+                WHERE DL2.GroupID = DL1.GroupID AND LayoutType = 2 AND LayoutID IN (SELECT T.c.value('.', 'INT') FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B) CROSS APPLY A.B.nodes('/ID') AS T(c))
+                FOR XML PATH('Layout'), TYPE
+            ) AS [Layouts]
+            FROM (SELECT DISTINCT GroupID FROM LayoutGroupView WHERE LayoutType = 2 AND LayoutID IN (SELECT T.c.value('.', 'INT') FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B) CROSS APPLY A.B.nodes('/ID') AS T(c))) AS DL1
+            FOR XML PATH('DetailLayout'), TYPE
+        ) AS [DetailLayoutsGroup],
+        (
+            SELECT GroupID AS [@GroupID], (
+                SELECT LayoutXML FROM LayoutGroupView AS HL2
+                WHERE HL2.GroupID = HL1.GroupID AND LayoutType = 4 AND LayoutID IN (SELECT T.c.value('.', 'INT') FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B) CROSS APPLY A.B.nodes('/ID') AS T(c))
+                FOR XML PATH('Layout'), TYPE
+            ) AS [Layouts]
+            FROM (SELECT DISTINCT GroupID FROM LayoutGroupView WHERE LayoutType = 4 AND LayoutID IN (SELECT T.c.value('.', 'INT') FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B) CROSS APPLY A.B.nodes('/ID') AS T(c))) AS HL1
+            FOR XML PATH('HistoryLayout'), TYPE
+        ) AS [HistoryLayoutsGroup]
+        FOR XML PATH('Layouts'), TYPE
+    )
+);
+
+-- Step 5: Get the Field schema XML for all the custom fields found.
+WITH FieldSchema AS (
+    SELECT CS.FIELDID, CS.LABEL, CS.TYPE, FTC.Caption AS FieldType, CS.LENGTH, CS.DEFAULTVALUE, CS.INTERNALLABEL, CS.TABLENAME, CS.FIELDNAME
+    FROM CUSTOMFIELDSCHEMA CS
+    LEFT JOIN FieldTypeCodeView FTC ON CS.TYPE = FTC.FIELDTYPE
+    WHERE CS.FIELDID IN (SELECT FieldID FROM @CustomFieldIDs)
+),
+LOVData AS (
+    SELECT T1.FIELDID,
+        -- Use STUFF and FOR XML PATH for backward-compatible string aggregation.
+        STUFF((
+            SELECT ', ' + T2.DISPLAYNAME
+            FROM CustomFieldLookup T2
+            WHERE T2.FIELDID = T1.FIELDID
+            FOR XML PATH('')
+        ), 1, 2, '') AS LOVS
+    FROM CustomFieldLookup T1
+    WHERE T1.FIELDID IN (SELECT FieldID FROM @CustomFieldIDs)
+    GROUP BY T1.FIELDID
+)
+SELECT @FieldXML = (
+    SELECT FS.FIELDID, FS.LABEL, FS.FieldType, FS.LENGTH, FS.DEFAULTVALUE, FS.INTERNALLABEL, FS.TABLENAME, FS.FIELDNAME, LD.LOVS
+    FROM FieldSchema FS
+    LEFT JOIN LOVData LD ON FS.FIELDID = LD.FIELDID
+    FOR XML PATH('Field'), ROOT('Fields')
+);
+
+-- Step 6: Combine Layout and Field XML into a single final output.
+SELECT
+    @LayoutXML AS [Layouts],
+    @FieldXML AS [Fields]
+FOR XML PATH('FinalOutput'), TYPE;`;
+    }
+};
+
+const ParserWorker = {
+    run(task, xml) {
+        return new Promise((resolve, reject) => {
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(xml, "application/xml");
+                if (doc.querySelector('parsererror')) {
+                    throw new Error('XML parsing error. Please ensure the file content is valid XML.');
+                }
+                
+                let result;
+                if (task === 'parseCombined') {
+                    const layoutNode = doc.querySelector('FinalOutput > Layouts > Layouts');
+                    const fieldNode = doc.querySelector('FinalOutput > Fields > Fields');
+                    
+                    if (!layoutNode) throw new Error('Could not find <Layouts> data in the XML file.');
+                    
+                    const layoutData = this._parseLayouts(layoutNode);
+                    const dbData = fieldNode ? this._parseDbXml(fieldNode) : new Map();
+
+                    result = { ...layoutData, dbData };
+                }
+                resolve(result);
+            } catch (e) {
+                reject(e);
+            }
+        });
+    },
+    _parseLayouts(doc) {
+        const masterFieldMap = new Map(), profileMapping = new Map(), cards = new Map(), buttons = new Map();
+        this._processLayouts(doc, 'NewEditLayouts', 'newEdit', { masterFieldMap, profileMapping, cards, buttons });
+        this._processLayouts(doc, 'DetailLayoutsGroup > DetailLayout', 'detail', { masterFieldMap, profileMapping, cards, buttons });
+        this._processLayouts(doc, 'HistoryLayoutsGroup > HistoryLayout', 'history', { masterFieldMap, profileMapping, cards, buttons });
+        return { masterFieldMap, profileMapping, cards, buttons };
+    },
+    _processLayouts(doc, selector, type, dataMaps) {
+        doc.querySelectorAll(selector).forEach(node => {
+            const groupID = node.getAttribute('GroupID');
+            node.querySelectorAll('Layout > LayoutXML').forEach(xmlNode => {
+                const innerDoc = new DOMParser().parseFromString(xmlNode.textContent, "application/xml");
+                if (innerDoc.querySelector('parsererror')) return;
+                const layoutName = innerDoc.documentElement.getAttribute('layoutname') || 'Unknown Layout';
+                if (groupID !== null) { const profileName = layoutName.split(':').pop().trim(); if (profileName) dataMaps.profileMapping.set(groupID, { Profile: profileName, Type: type, GroupID: groupID });}
+                innerDoc.querySelectorAll('control[CardName]').forEach(ctrl => { const cardName = ctrl.querySelector('property[name="CardName"]')?.getAttribute('value'); if (cardName) dataMaps.cards.set(`${layoutName}-${cardName}`, { Name: cardName, Layout: layoutName }); });
+                innerDoc.querySelectorAll('button[iscustom="1"]').forEach(btn => dataMaps.buttons.set(btn.getAttribute('id'), { ID: btn.getAttribute('id'), Caption: btn.getAttribute('caption'), Layout: layoutName }));
+                innerDoc.querySelectorAll('section').forEach(section => {
+                    const sectionName = section.querySelector('text > lang')?.getAttribute('text') || 'Unnamed';
+                    section.querySelectorAll('col').forEach(col => {
+                        const origId = col.getAttribute('fieldid');
+                        if (!origId || origId === 'blankcell') return;
+                        const id = origId.startsWith('cust_') ? origId.replace('cust_', '') : origId;
+                        if (!dataMaps.masterFieldMap.has(id)) { dataMaps.masterFieldMap.set(id, { fieldId: id, layoutLabel: col.querySelector('text > lang')?.getAttribute('text') || col.getAttribute('name'), section: sectionName, originalId: origId, layouts: {}, dependencies: [], dependencyContexts: [], visibilityOptions: null, dbInfo: null, lovs: { database: null, layout: null, dependency: null }, dependencyCondition: null }); }
+                        const rec = dataMaps.masterFieldMap.get(id);
+                        const req = col.getAttribute('req');
+                        rec.layouts[type] = { isRequired: req === '1' || req === '2' ? 'Yes' : 'No', isReadOnly: col.getAttribute('readonly') === '1' ? 'Yes' : 'No', isHidden: col.getAttribute('hide') === '1' ? 'Yes' : 'No' };
+                        const visNode = col.querySelector('visibility > visibilityoption');
+                        if (visNode) rec.visibilityOptions = visNode.getAttribute('displaynames')?.split(',') || [];
+                        const depNode = col.querySelector('dependents');
+                        if (depNode) {
+                            if (!rec.dependencyContexts.includes(type)) rec.dependencyContexts.push(type);
+                            depNode.querySelectorAll('option').forEach(opt => {
+                                const existingDep = rec.dependencies.find(d => d.onValue === opt.getAttribute('name'));
+                                if (existingDep) { existingDep.childFields.push(...Array.from(opt.querySelectorAll('dependent')).map(dep => dep.getAttribute('id'))); }
+                                else { rec.dependencies.push({ onValue: opt.getAttribute('name'), childFields: Array.from(opt.querySelectorAll('dependent')).map(dep => dep.getAttribute('id')) }); }
+                            });
+                        }
+                    });
+                });
+            });
+        });
+    },
+    _parseDbXml(doc) {
+        const data = new Map();
+        doc.querySelectorAll('Field').forEach(fieldNode => {
+            const id = fieldNode.querySelector('FIELDID')?.textContent;
+            if (!id) return;
+            data.set(id, {
+                FieldID: id,
+                Label: fieldNode.querySelector('LABEL')?.textContent,
+                FieldType: fieldNode.querySelector('FieldType')?.textContent,
+                Length: fieldNode.querySelector('LENGTH')?.textContent,
+                DefaultValue: fieldNode.querySelector('DEFAULTVALUE')?.textContent,
+                TableName: fieldNode.querySelector('TABLENAME')?.textContent,
+                FieldName: fieldNode.querySelector('FIELDNAME')?.textContent,
+                ColumnName: `${fieldNode.querySelector('TABLENAME')?.textContent}.${fieldNode.querySelector('FIELDNAME')?.textContent}`,
+                LOVS: fieldNode.querySelector('LOVS')?.textContent.trim() ? fieldNode.querySelector('LOVS').textContent.trim().split(/, ?/) : null
+            });
+        });
+        return data;
+    }
+};
+
+const Exporter = {
+    download(type, stateOrData) {
+        if (type === 'csv') {
+            this._downloadCsv(stateOrData);
+        } else if (type === 'excel') {
+            this._downloadExcel(stateOrData);
+        }
+    },
+    _flattenData(data) {
+        return data.map(item => {
+            const na = { isRequired: 'N/A', isReadOnly: 'N/A', isHidden: 'N/A' };
+            const newEdit = item.layouts.newEdit || na;
+            const detail = item.layouts.detail || na;
+            const history = item.layouts.history || na;
+            const db = item.dbInfo || {};
+            return {
+                'Layout Label': item.layoutLabel,
+                'DB Field Label': db.Label || '-',
+                'Field ID': item.fieldId,
+                'Data Type': db.FieldType || 'N/A',
+                'Length': db.Length || '-',
+                'Column Name': db.ColumnName || 'N/A',
+                'New/Edit - Required': newEdit.isRequired,
+                'New/Edit - ReadOnly': newEdit.isReadOnly,
+                'New/Edit - Hidden': newEdit.isHidden,
+                'Detail - Required': detail.isRequired,
+                'Detail - ReadOnly': detail.isReadOnly,
+                'Detail - Hidden': detail.isHidden,
+                'History - Required': history.isRequired,
+                'History - ReadOnly': history.isReadOnly,
+                'History - Hidden': history.isHidden,
+                'Database LOVs': item.lovs.database?.join('; ') || '',
+                'Layout Visibility LOVs': item.lovs.layout?.join('; ') || '',
+                'Dependency Trigger LOVs': item.lovs.dependency?.join('; ') || '',
+                'Dependency Condition': item.dependencyCondition || 'None'
+            };
+        });
+    },
+    _downloadCsv(data) {
+        const flatData = this._flattenData(data);
+        if (flatData.length === 0) {
+            alert("No data to export.");
+            return;
+        }
+        const headers = Object.keys(flatData[0]);
+        let csvContent = headers.join(',') + '\n';
+        flatData.forEach(row => {
+            const values = headers.map(header => {
+                let cell = row[header] === null || row[header] === undefined ? '' : row[header].toString();
+                cell = cell.replace(/"/g, '""');
+                return cell.includes(',') ? `"${cell}"` : cell;
+            });
+            csvContent += values.join(',') + '\n';
+        });
+        this._triggerDownload(csvContent, 'Layout_Analysis.csv', 'text/csv;charset=utf-8;');
+    },
+    _downloadExcel(state) {
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(this._flattenData(state.finalData)), "Field Analysis");
+        if(state.buttons.size > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Array.from(state.buttons.values())), "Custom Buttons");
+        if(state.cards.size > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Array.from(state.cards.values())), "UI Cards");
+        if(state.profileMapping.size > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Array.from(state.profileMapping.values())), "Profile Layouts");
+        XLSX.writeFile(wb, 'Layout_Analysis_Report.xlsx');
+    },
+    _triggerDownload(content, fileName, mimeType) {
+        const a = document.createElement('a');
+        const blob = new Blob([content], { type: mimeType });
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => App.init());
+</script>
+</body>
+</html>
