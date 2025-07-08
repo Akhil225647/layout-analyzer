@@ -34,6 +34,7 @@
             --sql-text: #cbd5e1;
             --sql-border: #334155;
         }
+        html { scroll-behavior: smooth; }
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--background-color);
@@ -66,7 +67,7 @@
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
         .btn { transition: all 0.3s ease; }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 7px 20px -4px rgb(0 0 0 / 0.2); }
-        .sql-box { background-color: var(--sql-bg); color: var(--sql-text); font-family: 'Fira Code', monospace; border: 1px solid var(--sql-border); }
+        .sql-box { font-family: 'Fira Code', monospace; }
         .table-container { max-height: 80vh; overflow: auto; border-radius: 0.5rem; border: 1px solid var(--border-color); }
         thead th { position: sticky; top: 0; z-index: 10; background-color: var(--card-background); border-bottom: 2px solid var(--border-color); color: var(--text-muted-color); }
         .section-header > th { position: sticky; top: 52px; z-index: 9; background-color: #f1f5f9; color: #334155; }
@@ -78,6 +79,12 @@
         @keyframes pop-in { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
         .final-animation { animation: pop-in 0.5s ease-out forwards; }
         .chart-bar { background-color: var(--primary-start); transition: width 1s ease-out; }
+        #back-to-top { position: fixed; bottom: 2rem; right: 2rem; display: none; }
+        .pinned-col { position: sticky; background-color: var(--card-background); }
+        .pinned-col-1 { left: 0; }
+        .pinned-col-2 { left: 200px; /* Adjust based on first column's width */ }
+        .dependency-child { padding-left: 2rem !important; }
+        .dependency-child::before { content: '└─'; padding-right: 0.5rem; color: var(--text-muted-color); }
     </style>
 </head>
 <body class="antialiased">
@@ -86,10 +93,16 @@
         <header class="text-center mb-8 relative">
             <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-700 to-purple-700">Layout Analyzer Pro</h1>
             <p class="text-md text-gray-600 dark:text-gray-400 mt-2">The definitive utility for deep layout analysis and documentation.</p>
-            <button id="dark-mode-toggle" class="absolute top-0 right-0 p-2 rounded-full text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                <svg id="theme-icon-light" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                <svg id="theme-icon-dark" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
-            </button>
+            <div class="absolute top-0 right-0 flex items-center space-x-2">
+                <button id="start-again-btn" class="flex items-center space-x-2 px-3 py-2 text-sm rounded-lg text-gray-600 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 btn" title="Start Again">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 4l16 16"/></svg>
+                    <span>Start Over</span>
+                </button>
+                <button id="dark-mode-toggle" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="Toggle Dark Mode">
+                    <svg id="theme-icon-light" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                    <svg id="theme-icon-dark" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                </button>
+            </div>
         </header>
 
         <div id="progress-container" class="mb-8 hidden">
@@ -102,14 +115,18 @@
         <main id="main-content" class="space-y-8"></main>
     </div>
 
+    <button id="back-to-top" class="p-3 rounded-full bg-indigo-600 text-white shadow-lg btn hover:bg-indigo-700" title="Back to Top">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+    </button>
+
 <script>
-// --- TEMPLATES AND ICONS (SINGLE-FILE WORKFLOW) ---
+// --- TEMPLATES AND ICONS ---
 const TEMPLATES = {
     step1: `<h2 class="text-xl font-bold mb-4 border-b pb-3 border-gray-200 dark:border-gray-700">Step 1: Provide Layout ID(s)</h2><p class="text-gray-600 dark:text-gray-400 mb-4">Enter the numeric CRMNext Layout ID for each layout you want to analyze, separated by commas.</p><div class="flex items-center space-x-4"><input id="layout-id-input" placeholder="e.g., 317492, 317493" class="flex-grow p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-transparent"><button id="generate-layout-query-btn" class="px-6 py-2.5 bg-gradient-to-r from-indigo-700 to-purple-700 text-white font-semibold rounded-lg shadow-md btn" disabled>Generate Query</button></div>`,
-    step2: `<h2 class="text-xl font-bold mb-4 border-b pb-3 border-gray-200 dark:border-gray-700">Step 2: Fetch Combined Data</h2><p class="text-gray-600 dark:text-gray-400 mb-4">Run this single query on your database. The result will be one row with one column containing all required XML data. Copy the entire XML content from that cell and save it as a file named <code>Combined_Data.xml</code>.</p><div class="relative"><pre class="sql-box p-4 rounded-lg overflow-x-auto"></pre><button class="copy-btn absolute top-3 right-3 px-3 py-1.5 font-semibold rounded-md flex items-center space-x-1.5 bg-indigo-600 text-white hover:bg-indigo-700 btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg><span>Copy</span></button></div>`,
+    step2: `<h2 class="text-xl font-bold mb-4 border-b pb-3 border-gray-200 dark:border-gray-700">Step 2: Fetch Combined Data</h2><p class="text-gray-600 dark:text-gray-400 mb-4">Run this single query on your database. The result will be one row with one column containing all required XML data. Copy the entire XML content from that cell and save it as a file named <code>Combined_Data.xml</code>.</p><div class="sql-container flex items-center space-x-2"><input type="text" readonly class="sql-box p-2 rounded-md w-full bg-gray-100 dark:bg-slate-800 border border-gray-300 dark:border-gray-600 truncate text-sm" /><button class="copy-btn flex-shrink-0 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md btn">Copy SQL</button></div>`,
     step3: `<h2 class="text-xl font-bold mb-4 border-b pb-3 border-gray-200 dark:border-gray-700">Step 3: Upload Combined XML</h2><div class="file-drop-zone rounded-lg p-6 text-center cursor-pointer"><input type="file" class="hidden" accept=".xml" /><div class="flex justify-center items-center text-gray-400"></div><h3 class="font-semibold mt-2">Combined Data File</h3><p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Click or drop <code>Combined_Data.xml</code> here</p></div>`,
     finalAnimation: `<div id="final-step-animation" class="final-animation text-center py-10"><div class="inline-block bg-gradient-to-br from-secondary-start to-secondary-end p-4 rounded-full shadow-lg"><svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div><p class="mt-4 text-xl font-semibold">Analysis Complete! Generating Report...</p></div>`,
-    results: `<div class="flex flex-col md:flex-row justify-between items-center mb-6"><h2 class="text-3xl font-bold">Analysis Report</h2><div class="flex items-center space-x-3 mt-4 md:mt-0"><button id="clear-btn" class="px-5 py-2.5 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 btn">Start Over</button><button id="download-csv-btn" class="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 text-white font-semibold rounded-lg shadow-md btn">Download CSV</button><button id="download-excel-btn" class="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 text-white font-semibold rounded-lg shadow-md btn">Download Excel</button></div></div><div id="dashboard" class="mb-8"></div><div id="filter-bar" class="bg-gray-100 dark:bg-slate-800 p-4 rounded-lg mb-6 border border-gray-200 dark:border-gray-700 flex flex-wrap items-center gap-4"></div><div class="table-container"><table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700"><thead class="bg-gray-50 dark:bg-slate-800"><tr><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider align-bottom">Layout Label</th><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider align-bottom">DB Field Label</th><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider align-bottom">Field ID</th><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider align-bottom">Data Type</th><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider align-bottom">Length</th><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider align-bottom">Column Name</th><th colspan="3" class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider border-b border-l border-r border-gray-200 dark:border-gray-700"><div class="tooltip">New / Edit<span class="tooltiptext">Properties on the data entry / creation form.</span></div></th><th colspan="3" class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider border-b border-r border-gray-200 dark:border-gray-700"><div class="tooltip">Detail<span class="tooltiptext">Properties on the read-only details page.</span></div></th><th colspan="3" class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider border-b border-r border-gray-200 dark:border-gray-700"><div class="tooltip">History<span class="tooltiptext">Properties on the record history page.</span></div></th></tr><tr><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider border-l border-gray-200 dark:border-gray-700"><div class="tooltip">Req?<span class="tooltiptext">Is the field Required?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider"><div class="tooltip">RO?<span class="tooltiptext">Is the field Read-Only?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider border-r border-gray-200 dark:border-gray-700"><div class="tooltip">Hid?<span class="tooltiptext">Is the field Hidden?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider"><div class="tooltip">Req?<span class="tooltiptext">Is the field Required?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider"><div class="tooltip">RO?<span class="tooltiptext">Is the field Read-Only?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider border-r border-gray-200 dark:border-gray-700"><div class="tooltip">Hid?<span class="tooltiptext">Is the field Hidden?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider"><div class="tooltip">Req?<span class="tooltiptext">Is the field Required?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider"><div class="tooltip">RO?<span class="tooltiptext">Is the field Read-Only?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider border-r border-gray-200 dark:border-gray-700"><div class="tooltip">Hid?<span class="tooltiptext">Is the field Hidden?</span></div></th></tr></thead><tbody id="results-table-body" class="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-gray-700"></tbody></table></div><p id="perf-metrics" class="text-xs text-center mt-4 text-gray-500 dark:text-gray-400"></p>`
+    results: `<div class="flex flex-col md:flex-row justify-between items-center mb-6"><h2 class="text-3xl font-bold">Analysis Report</h2><div class="flex items-center space-x-3 mt-4 md:mt-0"><button id="download-csv-btn" class="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 text-white font-semibold rounded-lg shadow-md btn">Download CSV</button><button id="download-excel-btn" class="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 text-white font-semibold rounded-lg shadow-md btn">Download Excel</button></div></div><div id="dashboard" class="mb-8"></div><div id="filter-bar" class="bg-gray-100 dark:bg-slate-800 p-4 rounded-lg mb-6 border border-gray-200 dark:border-gray-700 flex flex-wrap items-center gap-4"></div><div class="table-container"><table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700"><thead class="bg-gray-50 dark:bg-slate-800"><tr><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider align-bottom pinned-col pinned-col-1" style="min-width: 200px;">Layout Label</th><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider align-bottom pinned-col pinned-col-2" style="min-width: 200px;">DB Field Label</th><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider align-bottom">Field ID</th><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider align-bottom">Data Type</th><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider align-bottom">Length</th><th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider align-bottom">Column Name</th><th colspan="3" class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider border-b border-l border-r border-gray-200 dark:border-gray-700"><div class="tooltip">New / Edit<span class="tooltiptext">Properties on the data entry / creation form.</span></div></th><th colspan="3" class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider border-b border-r border-gray-200 dark:border-gray-700"><div class="tooltip">Detail<span class="tooltiptext">Properties on the read-only details page.</span></div></th><th colspan="3" class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider border-b border-r border-gray-200 dark:border-gray-700"><div class="tooltip">History<span class="tooltiptext">Properties on the record history page.</span></div></th></tr><tr><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider border-l border-gray-200 dark:border-gray-700"><div class="tooltip">Req?<span class="tooltiptext">Is the field Required?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider"><div class="tooltip">RO?<span class="tooltiptext">Is the field Read-Only?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider border-r border-gray-200 dark:border-gray-700"><div class="tooltip">Hid?<span class="tooltiptext">Is the field Hidden?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider"><div class="tooltip">Req?<span class="tooltiptext">Is the field Required?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider"><div class="tooltip">RO?<span class="tooltiptext">Is the field Read-Only?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider border-r border-gray-200 dark:border-gray-700"><div class="tooltip">Hid?<span class="tooltiptext">Is the field Hidden?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider"><div class="tooltip">Req?<span class="tooltiptext">Is the field Required?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider"><div class="tooltip">RO?<span class="tooltiptext">Is the field Read-Only?</span></div></th><th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider border-r border-gray-200 dark:border-gray-700"><div class="tooltip">Hid?<span class="tooltiptext">Is the field Hidden?</span></div></th></tr></thead><tbody id="results-table-body" class="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-gray-700"></tbody></table></div><p id="perf-metrics" class="text-xs text-center mt-4 text-gray-500 dark:text-gray-400"></p>`
 };
 const ICONS = {
     upload: `<svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>`,
@@ -172,11 +189,27 @@ const UI = {
     },
 
     copyToClipboard(text, buttonElement) {
-        navigator.clipboard.writeText(text).then(() => {
-            const originalHTML = buttonElement.innerHTML;
-            buttonElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>Copied!</span>`;
-            setTimeout(() => { buttonElement.innerHTML = originalHTML; }, 2000);
-        }).catch(err => UI.renderError('Failed to copy text to clipboard.'));
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.position = "fixed";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                const originalText = buttonElement.textContent;
+                buttonElement.textContent = 'Copied!';
+                setTimeout(() => { buttonElement.textContent = originalText; }, 2000);
+            } else {
+                 UI.renderError('Failed to copy text.');
+            }
+        } catch (err) {
+            UI.renderError('Failed to copy text: ' + err);
+        }
+        document.body.removeChild(textArea);
     },
     
     showFinalAnimation(callback) {
@@ -193,9 +226,8 @@ const UI = {
             resultsCard = this.createStep('results', TEMPLATES.results);
             UI.renderDashboard(resultsCard.querySelector('#dashboard'), App.state);
             UI.renderFilters(resultsCard.querySelector('#filter-bar'), allData, () => App.handleFilterChange());
-            resultsCard.querySelector('#clear-btn').addEventListener('click', () => App.reset());
-            resultsCard.querySelector('#download-csv-btn').addEventListener('click', () => Exporter.download('csv', App.state.finalData));
-            resultsCard.querySelector('#download-excel-btn').addEventListener('click', () => Exporter.download('excel', App.state));
+            resultsCard.querySelector('#download-csv-btn').addEventListener('click', () => Exporter.download('csv'));
+            resultsCard.querySelector('#download-excel-btn').addEventListener('click', () => Exporter.download('excel'));
         }
         
         const tableBody = resultsCard.querySelector('#results-table-body');
@@ -215,21 +247,24 @@ const UI = {
         Object.keys(groupedData).sort().forEach(section => {
             const headerRow = tableBody.insertRow();
             headerRow.className = "section-header";
+            headerRow.id = `section-header-${section.replace(/\s+/g, '-')}`;
             headerRow.innerHTML = `<th colspan="15" class="px-4 py-2 text-left text-sm font-bold">${section}</th>`;
             
             groupedData[section].forEach(item => {
                 const row = tableBody.insertRow();
-                row.className = `hover:bg-gray-50 dark:hover:bg-slate-800 ${item.dependencyCondition ? 'dependent-row' : ''}`;
+                row.className = `hover:bg-gray-50 dark:hover:bg-slate-800`;
                 
                 const NA = { isRequired: '-', isReadOnly: '-', isHidden: '-' };
                 const newEdit = item.layouts.newEdit || NA;
                 const detail = item.layouts.detail || NA;
                 const history = item.layouts.history || NA;
                 const db = item.dbInfo || {};
+                
+                const layoutLabelCell = `<td class="px-4 py-3 text-sm font-medium pinned-col pinned-col-1" style="padding-left: ${item.depth > 0 ? 0.75 + item.depth * 1.5 : 0.75}rem">${item.depth > 0 ? '└─ ' : ''}${item.layoutLabel}</td>`;
 
                 row.innerHTML = `
-                    <td class="px-4 py-3 text-sm font-medium">${item.layoutLabel}</td>
-                    <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">${db.Label || '-'}</td>
+                    ${layoutLabelCell}
+                    <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 pinned-col pinned-col-2">${db.Label || '-'}</td>
                     <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">${item.fieldId}</td>
                     <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">${db.FieldType || 'N/A'}</td>
                     <td class="px-4 py-3 text-sm text-center text-gray-500 dark:text-gray-400">${db.Length || '-'}</td>
@@ -244,9 +279,9 @@ const UI = {
                     <td class="px-2 py-3 text-center text-sm">${history.isReadOnly}</td>
                     <td class="px-2 py-3 text-center text-sm border-r border-gray-200 dark:border-gray-700">${history.isHidden}</td>`;
 
-                if ((item.lovs.database && item.lovs.database.length > 0 && item.lovs.database[0]) || item.dependencyCondition) {
+                if (item.lovs.database || item.lovs.layout || item.lovs.dependency) {
                     const detailRow = tableBody.insertRow();
-                    detailRow.className = 'details-row' + (item.dependencyCondition ? ' dependent-row' : '');
+                    detailRow.className = 'details-row';
                     const cell = detailRow.insertCell();
                     cell.colSpan = 15;
                     cell.className = "px-6 py-4 bg-slate-50 dark:bg-slate-800/50";
@@ -254,13 +289,8 @@ const UI = {
                     const dbLovs = item.lovs.database ? `<li><strong class="text-slate-800 dark:text-slate-200">Database LOVs:</strong><div class="text-xs pl-2 text-slate-600 dark:text-slate-400">${item.lovs.database.join(' | ')}</div></li>` : '';
                     const layoutLovs = item.lovs.layout ? `<li><strong class="text-slate-800 dark:text-slate-200">Layout Visibility:</strong><div class="text-xs pl-2 text-slate-600 dark:text-slate-400">${item.lovs.layout.join(' | ')}</div></li>` : '';
                     const depLovs = item.lovs.dependency ? `<li><strong class="text-slate-800 dark:text-slate-200">Dependency Triggers:</strong><div class="text-xs pl-2 text-slate-600 dark:text-slate-400">${item.lovs.dependency.join(' | ')}</div></li>` : '';
-                    const depInfo = item.dependencyCondition ? `<strong class="text-indigo-700 dark:text-indigo-400">Child Of:</strong> ${item.dependencyCondition}` : '';
                     
-                    cell.innerHTML = `
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            <div><ul class="space-y-1.5">${dbLovs}${layoutLovs}${depLovs}</ul></div>
-                            <div class="font-medium text-indigo-600 dark:text-indigo-400 self-center">${depInfo}</div>
-                        </div>`;
+                    cell.innerHTML = `<div class="text-sm"><ul class="space-y-1.5">${dbLovs}${layoutLovs}${depLovs}</ul></div>`;
                 }
             });
         });
@@ -268,23 +298,38 @@ const UI = {
     
     renderDashboard(container, state) {
         const createStatCard = (label, value) => `<div class="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg text-center"><p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400" data-countup="${value}">0</p><p class="text-sm font-medium text-gray-500 dark:text-gray-400">${label}</p></div>`;
-        const sectionsData = state.finalData.reduce((acc, item) => { acc[item.section] = (acc[item.section] || 0) + 1; return acc; }, {});
+        const sectionsData = state.finalData.reduce((acc, item) => { 
+            const section = item.section || 'Uncategorized';
+            acc[section] = (acc[section] || 0) + 1; 
+            return acc; 
+        }, {});
         const maxSectionCount = Math.max(...Object.values(sectionsData), 1);
         const chartHTML = Object.entries(sectionsData).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => `
-            <div class="flex items-center text-sm"><div class="w-1/3 text-gray-600 dark:text-gray-400 truncate pr-2">${name}</div>
-            <div class="w-2/3 bg-gray-200 dark:bg-gray-700 rounded-full h-4"><div class="chart-bar h-4 rounded-full flex items-center justify-end pr-2 text-white font-bold text-xs" style="width: 0%;" data-chart-width="${(count/maxSectionCount)*100}">${count}</div></div></div>
+            <a href="#" class="section-jump flex items-center text-sm group" data-section-name="${name.replace(/\s+/g, '-')}">
+                <div class="w-1/3 text-gray-600 dark:text-gray-400 truncate pr-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">${name}</div>
+                <div class="w-2/3 bg-gray-200 dark:bg-gray-700 rounded-full h-4">
+                    <div class="chart-bar h-4 rounded-full flex items-center justify-end pr-2 text-white font-bold text-xs group-hover:opacity-80" style="width: 0%;" data-chart-width="${(count/maxSectionCount)*100}">${count}</div>
+                </div>
+            </a>
         `).join('');
-        const profileMappingHTML = Array.from(state.profileMapping.values()).map(p => `<tr><td class="px-3 py-1.5 text-sm font-semibold">${p.Profile}</td><td class="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">${p.Type}</td><td class="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">${p.GroupID}</td></tr>`).join('');
 
         container.innerHTML = `
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-2"><h3 class="text-lg font-bold mb-3">Key Statistics</h3><div id="stats-card" class="grid grid-cols-2 md:grid-cols-4 gap-4">${createStatCard('Total Fields', state.finalData.length)}${createStatCard('Custom Fields', state.finalData.filter(f => f.originalId.startsWith('cust_')).length)}${createStatCard('Custom Buttons', state.buttons.size)}${createStatCard('UI Cards', state.cards.size)}</div></div>
-                <div><h3 class="text-lg font-bold mb-3">Profile to GroupID Mapping</h3><div class="max-h-48 overflow-y-auto"><table class="w-full text-left"><tbody>${profileMappingHTML}</tbody></table></div></div>
-                <div class="lg:col-span-3"><h3 class="text-lg font-bold mb-3">Top 5 Sections by Field Count</h3><div class="space-y-2">${chartHTML}</div></div>
+            <div class="grid grid-cols-1 gap-8">
+                <div><h3 class="text-lg font-bold mb-3">Key Statistics</h3><div id="stats-card" class="grid grid-cols-2 md:grid-cols-4 gap-4">${createStatCard('Total Fields', state.finalData.length)}${createStatCard('Custom Fields', state.finalData.filter(f => f.originalId.startsWith('cust_')).length)}${createStatCard('Custom Buttons', state.buttons.size)}${createStatCard('UI Cards', state.cards.size)}</div></div>
+                <div><h3 class="text-lg font-bold mb-3">Top 5 Sections by Field Count</h3><div id="section-chart" class="space-y-2">${chartHTML}</div></div>
             </div>`;
         
         container.querySelectorAll('[data-countup]').forEach(el => this.countUp(el));
         setTimeout(() => { container.querySelectorAll('[data-chart-width]').forEach(el => { el.style.width = el.dataset.chartWidth + '%'; }); }, 100);
+        
+        container.querySelector('#section-chart').addEventListener('click', (e) => {
+            const link = e.target.closest('.section-jump');
+            if (link) {
+                e.preventDefault();
+                const sectionId = `section-header-${link.dataset.sectionName}`;
+                document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
     },
 
     countUp(el) {
@@ -317,9 +362,14 @@ const UI = {
 
 const App = {
     state: {},
-    init() { this.reset(); DarkMode.init(); },
+    init() { 
+        this.reset(); 
+        DarkMode.init(); 
+        BackToTop.init();
+        document.getElementById('start-again-btn').addEventListener('click', () => this.reset());
+    },
     reset() {
-        this.state = { layoutIds: [], masterFieldMap: null, finalData: [], uiTabs: null, cards: null, buttons: null, profileMapping: null };
+        this.state = { layoutIds: [], masterFieldMap: null, finalData: [], filteredData: [], uiTabs: null, cards: null, buttons: null, profileMapping: null };
         UI.mainContainer.innerHTML = '';
         UI.progressContainer.classList.add('hidden');
         UI.clearErrors();
@@ -327,10 +377,18 @@ const App = {
     },
     renderStep(id, template) {
         const card = UI.createStep(id, template);
-        card.querySelectorAll('.copy-btn').forEach(btn => btn.addEventListener('click', e => {
-            const pre = e.target.closest('.relative').querySelector('pre');
-            if(pre) UI.copyToClipboard(pre.textContent, e.target.closest('button'));
-        }));
+        card.querySelectorAll('.copy-btn').forEach(btn => {
+            const container = btn.closest('.sql-container');
+            if (container) {
+                const input = container.querySelector('input.sql-box');
+                const fullQuery = SQLGenerator.combinedQuery(this.state.layoutIds.join(','));
+                if (input) {
+                    btn.addEventListener('click', () => {
+                        UI.copyToClipboard(fullQuery, btn);
+                    });
+                }
+            }
+        });
         return card;
     },
     renderStep1() {
@@ -349,7 +407,9 @@ const App = {
         }
         
         UI.updateProgress(2, 3, 'Generating Combined Query');
-        this.renderStep(2, TEMPLATES.step2).querySelector('pre').textContent = SQLGenerator.combinedQuery(this.state.layoutIds.join(','));
+        const card = this.renderStep(2, TEMPLATES.step2);
+        const sqlQuery = SQLGenerator.combinedQuery(this.state.layoutIds.join(',')).replace(/\s\s+/g, ' ').trim();
+        card.querySelector('input.sql-box').value = sqlQuery;
         this.renderUploadStep();
     },
     renderUploadStep() {
@@ -382,7 +442,7 @@ const App = {
             
             UI.updateProgress(3, 3, 'Analysis Complete!');
             UI.showFinalAnimation(() => {
-                this.handleFilterChange(); // This will now work, as it triggers the initial render and setup.
+                this.renderInitialReport();
                 const perfEl = document.getElementById('perf-metrics');
                 if(perfEl) perfEl.textContent = `Parsed XML and rendered report in ${this.state.parseTime} seconds.`;
             });
@@ -400,10 +460,13 @@ const App = {
         });
         const finalData = [], processed = new Set(), childOriginalIds = new Set();
         this.state.masterFieldMap.forEach(field => { field.dependencies.forEach(dep => dep.childFields.forEach(childId => childOriginalIds.add(childId))) });
-        const processField = (field) => {
+        
+        const processField = (field, depth = 0) => {
             if (!field || processed.has(field.fieldId)) return;
             processed.add(field.fieldId);
+            field.depth = depth;
             finalData.push(field);
+            
             field.dependencies.forEach(dep => {
                 const layoutContext = [...new Set(field.dependencyContexts)].join(', ');
                 dep.childFields.forEach(childOriginalId => {
@@ -411,16 +474,22 @@ const App = {
                     if (this.state.masterFieldMap.has(childId)) {
                         const childField = this.state.masterFieldMap.get(childId);
                         childField.dependencyCondition = `On '${field.layoutLabel}' = '${dep.onValue}' (in ${layoutContext})`;
-                        processField(childField);
+                        if (!processed.has(childId)) {
+                           processField(childField, depth + 1);
+                        }
                     }
                 });
             });
         };
+        
         this.state.masterFieldMap.forEach(field => { if (!childOriginalIds.has(field.originalId)) processField(field); });
         this.state.finalData = finalData;
+        this.state.filteredData = finalData;
+    },
+    renderInitialReport() {
+        UI.renderResults(this.state.finalData, this.state.finalData);
     },
     handleFilterChange() {
-        // Defensively get filter elements. They might not exist on the initial render call.
         const searchEl = document.getElementById('filter-search');
         const sectionEl = document.getElementById('filter-section');
         const typeEl = document.getElementById('filter-type');
@@ -433,7 +502,7 @@ const App = {
             mandatory: mandatoryEl ? mandatoryEl.value : '',
         };
 
-        const filteredData = this.state.finalData.filter(item => {
+        this.state.filteredData = this.state.finalData.filter(item => {
             const searchMatch = !filters.search || item.layoutLabel.toLowerCase().includes(filters.search) || (item.dbInfo?.Label || '').toLowerCase().includes(filters.search);
             const sectionMatch = !filters.section || item.section === filters.section;
             const typeMatch = !filters.type || (filters.type === 'custom' ? item.originalId.startsWith('cust_') : !item.originalId.startsWith('cust_'));
@@ -441,8 +510,7 @@ const App = {
             return searchMatch && sectionMatch && typeMatch && mandatoryMatch;
         });
         
-        // This call will create the filter elements if they don't exist yet, then render the data.
-        UI.renderResults(filteredData, this.state.finalData);
+        UI.renderResults(this.state.filteredData, this.state.finalData);
     },
     handleError(error, step) {
         UI.renderError(`An error occurred at Step ${step}: ${error.message}`);
@@ -459,7 +527,7 @@ const App = {
 
 const SQLGenerator = {
     combinedQuery(ids) {
-        return `
+        return `-- Set your comma-separated Layout IDs here.
 DECLARE @LayoutIDs NVARCHAR(MAX) = '${ids}';
 
 -- ####################################################################
@@ -659,12 +727,12 @@ const ParserWorker = {
 };
 
 const Exporter = {
-    download(type, stateOrData) {
-        const data = Array.isArray(stateOrData) ? stateOrData : stateOrData.finalData;
+    download(type) {
+        const data = App.state.filteredData;
         if (type === 'csv') {
             this._downloadCsv(data);
         } else if (type === 'excel') {
-            this._downloadExcel(stateOrData);
+            this._downloadExcel(App.state);
         }
     },
     _flattenData(data) {
@@ -716,15 +784,15 @@ const Exporter = {
         this._triggerDownload(csvContent, 'Layout_Analysis.csv', 'text/csv;charset=utf-8;');
     },
     _downloadExcel(state) {
-        if (!state.finalData || state.finalData.length === 0) {
+        const dataToExport = state.filteredData || state.finalData;
+        if (!dataToExport || dataToExport.length === 0) {
             UI.renderError("No data to export.");
             return;
         }
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(this._flattenData(state.finalData)), "Field Analysis");
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(this._flattenData(dataToExport)), "Field Analysis");
         if(state.buttons.size > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Array.from(state.buttons.values())), "Custom Buttons");
         if(state.cards.size > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Array.from(state.cards.values())), "UI Cards");
-        if(state.profileMapping.size > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Array.from(state.profileMapping.values())), "Profile Layouts");
         XLSX.writeFile(wb, 'Layout_Analysis_Report.xlsx');
     },
     _triggerDownload(content, fileName, mimeType) {
@@ -774,6 +842,24 @@ const DarkMode = {
         this.lightIcon.classList.remove('hidden');
     }
 };
+
+const BackToTop = {
+    init() {
+        this.btn = document.getElementById('back-to-top');
+        window.addEventListener('scroll', () => this.onScroll());
+        this.btn.addEventListener('click', () => this.scrollToTop());
+    },
+    onScroll() {
+        if (window.scrollY > 300) {
+            this.btn.style.display = 'block';
+        } else {
+            this.btn.style.display = 'none';
+        }
+    },
+    scrollToTop() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => App.init());
 </script>
