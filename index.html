@@ -459,7 +459,7 @@ const App = {
 
 const SQLGenerator = {
     combinedQuery(ids) {
-        return `-- Set your comma-separated Layout IDs here.
+        return `
 DECLARE @LayoutIDs NVARCHAR(MAX) = '${ids}';
 
 -- ####################################################################
@@ -480,7 +480,9 @@ WHERE LayoutID IN (
 
 -- Step 2: Manually decode the HTML-encoded XML to prepare for parsing.
 DECLARE @DecodedLayoutXML XML;
-SET @DecodedLayoutXML = CAST(REPLACE(REPLACE(REPLACE(REPLACE(@RawEncodedXML, '&lt;', '<'), '&gt;', '>'), '&quot;', '"'), '&amp;', '&') AS XML);
+DECLARE @TempWrapper XML;
+SET @TempWrapper = CAST('<root>' + @RawEncodedXML + '</root>' AS XML);
+SET @DecodedLayoutXML = @TempWrapper.query('/root/*');
 
 -- Step 3: Extract all unique custom field IDs from the decoded XML.
 INSERT INTO @CustomFieldIDs (FieldID)
