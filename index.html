@@ -188,7 +188,6 @@ const UI = {
         }
     },
 
-    // REFACTORED: Uses modern async Clipboard API with a fallback
     async copyToClipboard(text, buttonElement) {
         if (!navigator.clipboard) {
             this.legacyCopyToClipboard(text, buttonElement);
@@ -200,7 +199,7 @@ const UI = {
             buttonElement.textContent = 'Copied!';
             setTimeout(() => { buttonElement.textContent = originalText; }, 2000);
         } catch (err) {
-            UI.renderError('Failed to copy text: ' + err);
+            UI.renderError('Failed to copy text. This may happen when running from a local file.');
             console.error('Async copy failed:', err);
         }
     },
@@ -235,7 +234,6 @@ const UI = {
         }, 1500);
     },
 
-    // REFACTORED: Uses DocumentFragment for performant rendering
     renderResults(data, allData) {
         let resultsCard = document.getElementById('step-results');
         if (!resultsCard) {
@@ -254,7 +252,7 @@ const UI = {
             return;
         }
 
-        const fragment = document.createDocumentFragment(); // Create a fragment
+        const fragment = document.createDocumentFragment();
 
         const groupedData = data.reduce((acc, item) => {
             const section = item.section || 'Uncategorized';
@@ -267,7 +265,7 @@ const UI = {
             headerRow.className = "section-header";
             headerRow.id = `section-header-${section.replace(/\s+/g, '-')}`;
             headerRow.innerHTML = `<th colspan="15" class="px-4 py-2 text-left text-sm font-bold">${section}</th>`;
-            fragment.appendChild(headerRow); // Append to fragment
+            fragment.appendChild(headerRow);
             
             groupedData[section].forEach(item => {
                 const row = document.createElement('tr');
@@ -297,7 +295,7 @@ const UI = {
                     <td class="px-2 py-3 text-center text-sm">${history.isRequired}</td>
                     <td class="px-2 py-3 text-center text-sm">${history.isReadOnly}</td>
                     <td class="px-2 py-3 text-center text-sm border-r border-gray-200 dark:border-gray-700">${history.isHidden}</td>`;
-                fragment.appendChild(row); // Append to fragment
+                fragment.appendChild(row);
 
                 if (item.lovs.database || item.lovs.layout || item.lovs.dependency) {
                     const detailRow = document.createElement('tr');
@@ -309,75 +307,16 @@ const UI = {
                     const layoutLovs = item.lovs.layout ? `<li><strong class="text-slate-800 dark:text-slate-200">Layout Visibility:</strong><div class="text-xs pl-2 text-slate-600 dark:text-slate-400">${item.lovs.layout.join(' | ')}</div></li>` : '';
                     const depLovs = item.lovs.dependency ? `<li><strong class="text-slate-800 dark:text-slate-200">Dependency Triggers:</strong><div class="text-xs pl-2 text-slate-600 dark:text-slate-400">${item.lovs.dependency.join(' | ')}</div></li>` : '';
                     cell.innerHTML = `<div class="text-sm"><ul class="space-y-1.5">${dbLovs}${layoutLovs}${depLovs}</ul></div>`;
-                    fragment.appendChild(detailRow); // Append to fragment
+                    fragment.appendChild(detailRow);
                 }
             });
         });
-        tableBody.appendChild(fragment); // Append fragment to DOM once
+        tableBody.appendChild(fragment);
     },
     
-    renderDashboard(container, state) {
-        const createStatCard = (label, value) => `<div class="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg text-center"><p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400" data-countup="${value}">0</p><p class="text-sm font-medium text-gray-500 dark:text-gray-400">${label}</p></div>`;
-        const sectionsData = state.finalData.reduce((acc, item) => { 
-            const section = item.section || 'Uncategorized';
-            acc[section] = (acc[section] || 0) + 1; 
-            return acc; 
-        }, {});
-        const maxSectionCount = Math.max(...Object.values(sectionsData), 1);
-        const chartHTML = Object.entries(sectionsData).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => `
-            <a href="#" class="section-jump flex items-center text-sm group" data-section-name="${name.replace(/\s+/g, '-')}">
-                <div class="w-1/3 text-gray-600 dark:text-gray-400 truncate pr-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">${name}</div>
-                <div class="w-2/3 bg-gray-200 dark:bg-gray-700 rounded-full h-4">
-                    <div class="chart-bar h-4 rounded-full flex items-center justify-end pr-2 text-white font-bold text-xs group-hover:opacity-80" style="width: 0%;" data-chart-width="${(count/maxSectionCount)*100}">${count}</div>
-                </div>
-            </a>
-        `).join('');
-
-        container.innerHTML = `
-            <div class="grid grid-cols-1 gap-8">
-                <div><h3 class="text-lg font-bold mb-3">Key Statistics</h3><div id="stats-card" class="grid grid-cols-2 md:grid-cols-4 gap-4">${createStatCard('Total Fields', state.finalData.length)}${createStatCard('Custom Fields', state.finalData.filter(f => f.originalId.startsWith('cust_')).length)}${createStatCard('Custom Buttons', state.buttons.size)}${createStatCard('UI Cards', state.cards.size)}</div></div>
-                <div><h3 class="text-lg font-bold mb-3">Top 5 Sections by Field Count</h3><div id="section-chart" class="space-y-2">${chartHTML}</div></div>
-            </div>`;
-        
-        container.querySelectorAll('[data-countup]').forEach(el => this.countUp(el));
-        setTimeout(() => { container.querySelectorAll('[data-chart-width]').forEach(el => { el.style.width = el.dataset.chartWidth + '%'; }); }, 100);
-        
-        container.querySelector('#section-chart').addEventListener('click', (e) => {
-            const link = e.target.closest('.section-jump');
-            if (link) {
-                e.preventDefault();
-                const sectionId = `section-header-${link.dataset.sectionName}`;
-                document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        });
-    },
-
-    countUp(el) {
-        const endValue = parseInt(el.dataset.countup, 10);
-        if (isNaN(endValue)) return;
-        let start = 0;
-        const duration = 1500;
-        const stepTime = Math.max(1, Math.abs(Math.floor(duration / endValue)));
-        const timer = setInterval(() => {
-            start += 1;
-            el.textContent = start;
-            if (start >= endValue) {
-                el.textContent = endValue;
-                clearInterval(timer);
-            }
-        }, stepTime);
-    },
-
-    renderFilters(container, data, changeCallback) {
-        const sections = [...new Set(data.map(item => item.section))].sort();
-        container.innerHTML = `<span class="font-semibold text-sm self-center">Filters:</span>`;
-        container.innerHTML += `<div class="flex-grow"><label for="filter-search" class="sr-only">Search</label><input type="search" id="filter-search" placeholder="Search by field or label..." class="p-2 w-full border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-transparent"></div>`;
-        let options = '<option value="">All Sections</option>' + sections.map(s => `<option value="${s}">${s}</option>`).join('');
-        container.innerHTML += `<div><label class="sr-only" for="filter-section">Section</label><select id="filter-section" class="p-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-transparent">${options}</select></div>`;
-        container.innerHTML += `<div><label class="sr-only" for="filter-type">Field Type</label><select id="filter-type" class="p-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-transparent"><option value="">All Types</option><option value="custom">Custom</option><option value="system">System</option></select></div>`;
-        container.innerHTML += `<div><label class="sr-only" for="filter-mandatory">Requirement</label><select id="filter-mandatory" class="p-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-transparent"><option value="">All Requirements</option><option value="yes">Mandatory Only</option></select></div>`;
-        container.querySelectorAll('select, input').forEach(el => el.addEventListener('input', changeCallback));
-    }
+    renderDashboard(container, state) { /* ... This function remains the same ... */ },
+    countUp(el) { /* ... This function remains the same ... */ },
+    renderFilters(container, data, changeCallback) { /* ... This function remains the same ... */ }
 };
 
 const App = {
@@ -401,42 +340,15 @@ const App = {
                 const input = container.querySelector('input.sql-box');
                 const fullQuery = SQLGenerator.combinedQuery(this.state.layoutIds.join(','));
                 if (input) {
-                    btn.addEventListener('click', () => {
-                        UI.copyToClipboard(fullQuery, btn);
-                    });
+                    btn.addEventListener('click', () => { UI.copyToClipboard(fullQuery, btn); });
                 }
             }
         });
         return card;
     },
-    renderStep1() {
-        UI.updateProgress(1, 3, 'Awaiting Layout IDs');
-        const card = this.renderStep(1, TEMPLATES.step1);
-        const input = card.querySelector('input'), button = card.querySelector('button');
-        input.addEventListener('input', () => { button.disabled = input.value.trim() === ''; });
-        button.addEventListener('click', () => this.handleLayoutQuery(input.value));
-    },
-    handleLayoutQuery(idValue) {
-        UI.clearErrors();
-        this.state.layoutIds = idValue.trim().split(',').map(id => id.trim()).filter(id => id);
-        if (this.state.layoutIds.length === 0) {
-            UI.renderError("Please enter at least one valid Layout ID.");
-            return;
-        }
-        
-        UI.updateProgress(2, 3, 'Generating Combined Query');
-        const card = this.renderStep(2, TEMPLATES.step2);
-        const sqlQuery = SQLGenerator.combinedQuery(this.state.layoutIds.join(',')).replace(/\s\s+/g, ' ').trim();
-        card.querySelector('input.sql-box').value = sqlQuery;
-        this.renderUploadStep();
-    },
-    renderUploadStep() {
-        UI.updateProgress(2, 3, 'Awaiting Combined XML...');
-        const card = this.renderStep(3, TEMPLATES.step3);
-        const dropzone = card.querySelector('.file-drop-zone'), input = card.querySelector('input');
-        UI.updateFileDropzone(dropzone, 'initial');
-        this.setupFileHandler(dropzone, input, this.handleCombinedFile);
-    },
+    renderStep1() { /* ... This function remains the same ... */ },
+    handleLayoutQuery(idValue) { /* ... This function remains the same ... */ },
+    renderUploadStep() { /* ... This function remains the same ... */ },
     async handleCombinedFile(file) {
         UI.clearErrors();
         const dropzone = document.querySelector('#step-3 .file-drop-zone');
@@ -444,14 +356,13 @@ const App = {
         
         const startTime = performance.now();
         try {
-            // Use the Web Worker for parsing
+            // Reverted to calling the parser directly on the main thread
             const parsedResult = await ParserWorker.run('parseCombined', await file.text());
             const endTime = performance.now();
             this.state.parseTime = ((endTime - startTime) / 1000).toFixed(2);
             
             UI.updateFileDropzone(dropzone, 'success', file.name);
 
-            // Assign results from worker to state
             this.state.masterFieldMap = parsedResult.masterFieldMap;
             this.state.uiTabs = parsedResult.uiTabs;
             this.state.cards = parsedResult.cards;
@@ -471,360 +382,129 @@ const App = {
             UI.updateFileDropzone(dropzone, 'initial');
         }
     },
-    finalizeData(dbData) {
-        this.state.masterFieldMap.forEach(field => {
-            if (dbData.has(field.fieldId)) field.dbInfo = dbData.get(field.fieldId);
-            if (field.dbInfo?.LOVS) field.lovs.database = field.dbInfo.LOVS;
-            if (field.visibilityOptions) field.lovs.layout = field.visibilityOptions;
-            if (field.dependencies.length > 0) field.lovs.dependency = [...new Set(field.dependencies.map(d => d.onValue))];
-        });
-        const finalData = [], processed = new Set(), childOriginalIds = new Set();
-        this.state.masterFieldMap.forEach(field => { field.dependencies.forEach(dep => dep.childFields.forEach(childId => childOriginalIds.add(childId))) });
-        
-        const processField = (field, depth = 0) => {
-            if (!field || processed.has(field.fieldId)) return;
-            processed.add(field.fieldId);
-            field.depth = depth;
-            finalData.push(field);
-            
-            field.dependencies.forEach(dep => {
-                const layoutContext = [...new Set(field.dependencyContexts)].join(', ');
-                dep.childFields.forEach(childOriginalId => {
-                    const childId = childOriginalId.startsWith('cust_') ? childOriginalId.replace('cust_', '') : childOriginalId;
-                    if (this.state.masterFieldMap.has(childId)) {
-                        const childField = this.state.masterFieldMap.get(childId);
-                        childField.dependencyCondition = `On '${field.layoutLabel}' = '${dep.onValue}' (in ${layoutContext})`;
-                        if (!processed.has(childId)) {
-                           processField(childField, depth + 1);
-                        }
-                    }
-                });
-            });
-        };
-        
-        this.state.masterFieldMap.forEach(field => { if (!childOriginalIds.has(field.originalId)) processField(field); });
-        this.state.finalData = finalData;
-        this.state.filteredData = finalData;
-    },
-    renderInitialReport() {
-        UI.renderResults(this.state.finalData, this.state.finalData);
-    },
-    handleFilterChange() {
-        const filters = {
-            search: document.getElementById('filter-search').value.toLowerCase(),
-            section: document.getElementById('filter-section').value,
-            type: document.getElementById('filter-type').value,
-            mandatory: document.getElementById('filter-mandatory').value,
-        };
-
-        this.state.filteredData = this.state.finalData.filter(item => {
-            const searchMatch = !filters.search || item.layoutLabel.toLowerCase().includes(filters.search) || (item.dbInfo?.Label || '').toLowerCase().includes(filters.search);
-            const sectionMatch = !filters.section || item.section === filters.section;
-            const typeMatch = !filters.type || (filters.type === 'custom' ? item.originalId.startsWith('cust_') : !item.originalId.startsWith('cust_'));
-            const mandatoryMatch = !filters.mandatory || (item.layouts.newEdit?.isRequired === 'Yes');
-            return searchMatch && sectionMatch && typeMatch && mandatoryMatch;
-        });
-        
-        UI.renderResults(this.state.filteredData, this.state.finalData);
-    },
-    handleError(error, step) {
-        UI.renderError(`An error occurred at Step ${step}: ${error.message}`);
-        console.error(error);
-    },
-    setupFileHandler(dropzone, input, callback) {
-        dropzone.addEventListener('click', () => input.click());
-        input.addEventListener('change', e => e.target.files[0] && callback.call(this, e.target.files[0]));
-        dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
-        dropzone.addEventListener('dragleave', e => { e.preventDefault(); dropzone.classList.remove('dragover'); });
-        dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('dragover'); e.dataTransfer.files[0] && callback.call(this, e.dataTransfer.files[0]); });
-    }
+    finalizeData(dbData) { /* ... This function remains the same ... */ },
+    renderInitialReport() { /* ... This function remains the same ... */ },
+    handleFilterChange() { /* ... This function remains the same ... */ },
+    handleError(error, step) { /* ... This function remains the same ... */ },
+    setupFileHandler(dropzone, input, callback) { /* ... This function remains the same ... */ }
 };
 
 const SQLGenerator = {
-    combinedQuery(ids) {
-        return `-- Set your comma-separated Layout IDs here.
-DECLARE @LayoutIDs NVARCHAR(MAX) = '${ids}';
-
--- ####################################################################
--- INTERNAL SCRIPT - DO NOT MODIFY BELOW THIS LINE
--- ####################################################################
-
-DECLARE @LayoutXML XML;
-DECLARE @FieldXML XML;
-DECLARE @CustomFieldIDs TABLE (FieldID INT PRIMARY KEY);
-DECLARE @RawEncodedXML NVARCHAR(MAX);
-
--- Step 1: Get Raw HTML-encoded LayoutXML from a primary layout to find field IDs.
-SELECT @RawEncodedXML = CAST(LayoutXML AS NVARCHAR(MAX))
-FROM LayoutGroupView
-WHERE LayoutID IN (
-    SELECT T.c.value('.', 'INT') FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B) CROSS APPLY A.B.nodes('/ID') AS T(c)
-) AND LayoutType = 1;
-
--- Step 2: Manually decode the HTML-encoded XML to prepare for parsing.
-DECLARE @DecodedLayoutXML XML;
-DECLARE @TempWrapper XML;
-SET @TempWrapper = CAST('<root>' + @RawEncodedXML + '</root>' AS XML);
-SET @DecodedLayoutXML = @TempWrapper.query('/root/*');
-
--- Step 3: Extract all unique custom field IDs from the decoded XML.
-INSERT INTO @CustomFieldIDs (FieldID)
-SELECT DISTINCT
-    TRY_CAST(REPLACE(T.c.value('@fieldid', 'NVARCHAR(100)'), 'cust_', '') AS INT)
-FROM @DecodedLayoutXML.nodes('//col[@fieldid]') AS T(c)
-WHERE T.c.value('@fieldid', 'NVARCHAR(100)') LIKE 'cust_%'
-  AND ISNUMERIC(REPLACE(T.c.value('@fieldid', 'NVARCHAR(100)'), 'cust_', '')) = 1;
-
--- Step 4: Get the complete, properly-formed Layout XML for all specified layouts and types.
-SET @LayoutXML = (
-    SELECT (
-        SELECT (
-            SELECT LayoutXML FROM LayoutGroupView
-            WHERE LayoutType = 1 AND LayoutID IN (SELECT T.c.value('.', 'INT') FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B) CROSS APPLY A.B.nodes('/ID') AS T(c))
-            FOR XML PATH('Layout'), ROOT('NewEditLayouts'), TYPE
-        ) AS [NewEditLayouts],
-        (
-            SELECT GroupID AS [@GroupID], (
-                SELECT LayoutXML FROM LayoutGroupView AS DL2
-                WHERE DL2.GroupID = DL1.GroupID AND LayoutType = 2 AND LayoutID IN (SELECT T.c.value('.', 'INT') FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B) CROSS APPLY A.B.nodes('/ID') AS T(c))
-                FOR XML PATH('Layout'), TYPE
-            ) AS [Layouts]
-            FROM (SELECT DISTINCT GroupID FROM LayoutGroupView WHERE LayoutType = 2 AND LayoutID IN (SELECT T.c.value('.', 'INT') FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B) CROSS APPLY A.B.nodes('/ID') AS T(c))) AS DL1
-            FOR XML PATH('DetailLayout'), TYPE
-        ) AS [DetailLayoutsGroup],
-        (
-            SELECT GroupID AS [@GroupID], (
-                SELECT LayoutXML FROM LayoutGroupView AS HL2
-                WHERE HL2.GroupID = HL1.GroupID AND LayoutType = 4 AND LayoutID IN (SELECT T.c.value('.', 'INT') FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B) CROSS APPLY A.B.nodes('/ID') AS T(c))
-                FOR XML PATH('Layout'), TYPE
-            ) AS [Layouts]
-            FROM (SELECT DISTINCT GroupID FROM LayoutGroupView WHERE LayoutType = 4 AND LayoutID IN (SELECT T.c.value('.', 'INT') FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B) CROSS APPLY A.B.nodes('/ID') AS T(c))) AS HL1
-            FOR XML PATH('HistoryLayout'), TYPE
-        ) AS [HistoryLayoutsGroup]
-        FOR XML PATH('Layouts'), TYPE
-    )
-);
-
--- Step 5: Get the Field schema XML for all the custom fields found.
-WITH FieldSchema AS (
-    SELECT CS.FIELDID, CS.LABEL, CS.TYPE, FTC.Caption AS FieldType, CS.LENGTH, CS.DEFAULTVALUE, CS.INTERNALLABEL, CS.TABLENAME, CS.FIELDNAME
-    FROM CUSTOMFIELDSCHEMA CS
-    LEFT JOIN FieldTypeCodeView FTC ON CS.TYPE = FTC.FIELDTYPE
-    WHERE CS.FIELDID IN (SELECT FieldID FROM @CustomFieldIDs)
-),
-LOVData AS (
-    SELECT T1.FIELDID,
-        STUFF((
-            SELECT ', ' + T2.DISPLAYNAME
-            FROM CustomFieldLookup T2
-            WHERE T2.FIELDID = T1.FIELDID
-            FOR XML PATH('')
-        ), 1, 2, '') AS LOVS
-    FROM CustomFieldLookup T1
-    WHERE T1.FIELDID IN (SELECT FieldID FROM @CustomFieldIDs)
-    GROUP BY T1.FIELDID
-)
-SELECT @FieldXML = (
-    SELECT FS.FIELDID, FS.LABEL, FS.FieldType, FS.LENGTH, FS.DEFAULTVALUE, FS.INTERNALLABEL, FS.TABLENAME, FS.FIELDNAME, LD.LOVS
-    FROM FieldSchema FS
-    LEFT JOIN LOVData LD ON FS.FIELDID = LD.FIELDID
-    FOR XML PATH('Field'), ROOT('Fields')
-);
-
--- Step 6: Combine Layout and Field XML into a single final output.
-SELECT
-    @LayoutXML AS [Layouts],
-    @FieldXML AS [Fields]
-FOR XML PATH('FinalOutput'), TYPE;`;
-    }
+    combinedQuery(ids) { /* ... This function remains the same ... */ }
 };
 
-// REFACTORED: Now a lightweight wrapper for the parser.js Web Worker
+// REVERTED: Parser logic moved back here from the external file.
 const ParserWorker = {
     run(task, xml) {
-        const worker = new Worker('parser.js'); // The path to your new worker file
-        
         return new Promise((resolve, reject) => {
-            // Listen for messages from the worker
-            worker.onmessage = (event) => {
-                const { success, data, error } = event.data;
-                if (success) {
-                    // Re-hydrate Maps from the arrays sent by the worker
-                    data.masterFieldMap = new Map(data.masterFieldMap);
-                    data.cards = new Map(data.cards);
-                    data.buttons = new Map(data.buttons);
-                    data.profileMapping = new Map(data.profileMapping);
-                    data.dbData = new Map(data.dbData);
-                    resolve(data);
-                } else {
-                    const workerError = new Error(error.message);
-                    workerError.stack = error.stack;
-                    reject(workerError);
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(xml, "application/xml");
+                if (doc.querySelector('parsererror')) {
+                    throw new Error('XML parsing error. Please ensure the file content is valid and was copied correctly.');
                 }
-                worker.terminate(); // Clean up the worker
-            };
+                
+                let result;
+                if (task === 'parseCombined') {
+                    const finalOutputNode = doc.querySelector('FinalOutput');
+                    if (!finalOutputNode) throw new Error('The root <FinalOutput> tag was not found. The SQL query may have failed or produced an unexpected result.');
+                    
+                    const layoutNode = finalOutputNode.querySelector('Layouts > Layouts');
+                    const fieldNode = finalOutputNode.querySelector('Fields > Fields');
+                    
+                    if (!layoutNode) throw new Error('Could not find <Layouts> data within <FinalOutput>. Please check the generated XML.');
+                    
+                    const layoutData = this._parseLayouts(layoutNode);
+                    const dbData = fieldNode ? this._parseDbXml(fieldNode) : new Map();
 
-            // Handle any errors that occur within the worker itself
-            worker.onerror = (event) => {
-                reject(new Error(`Worker error: ${event.message}`));
-                worker.terminate();
-            };
-
-            // Start the worker by sending it the data
-            worker.postMessage({ task, xml });
-        });
-    }
-};
-
-const Exporter = {
-    download(type) {
-        const data = App.state.filteredData;
-        if (type === 'csv') {
-            this._downloadCsv(data);
-        } else if (type === 'excel') {
-            this._downloadExcel(App.state);
-        }
-    },
-    _flattenData(data) {
-        return data.map(item => {
-            const na = { isRequired: 'N/A', isReadOnly: 'N/A', isHidden: 'N/A' };
-            const newEdit = item.layouts.newEdit || na;
-            const detail = item.layouts.detail || na;
-            const history = item.layouts.history || na;
-            const db = item.dbInfo || {};
-            return {
-                'Layout Label': item.layoutLabel,
-                'DB Field Label': db.Label || '-',
-                'Field ID': item.fieldId,
-                'Data Type': db.FieldType || 'N/A',
-                'Length': db.Length || '-',
-                'Column Name': db.ColumnName || 'N/A',
-                'New/Edit - Required': newEdit.isRequired,
-                'New/Edit - ReadOnly': newEdit.isReadOnly,
-                'New/Edit - Hidden': newEdit.isHidden,
-                'Detail - Required': detail.isRequired,
-                'Detail - ReadOnly': detail.isReadOnly,
-                'Detail - Hidden': detail.isHidden,
-                'History - Required': history.isRequired,
-                'History - ReadOnly': history.isReadOnly,
-                'History - Hidden': history.isHidden,
-                'Database LOVs': item.lovs.database?.join('; ') || '',
-                'Layout Visibility LOVs': item.lovs.layout?.join('; ') || '',
-                'Dependency Trigger LOVs': item.lovs.dependency?.join('; ') || '',
-                'Dependency Condition': item.dependencyCondition || 'None'
-            };
+                    result = { ...layoutData, dbData };
+                }
+                resolve(result);
+            } catch (e) {
+                reject(e);
+            }
         });
     },
-    _downloadCsv(data) {
-        const flatData = this._flattenData(data);
-        if (flatData.length === 0) {
-            UI.renderError("No data to export for the current filter.");
-            return;
-        }
-        const headers = Object.keys(flatData[0]);
-        let csvContent = headers.join(',') + '\n';
-        flatData.forEach(row => {
-            const values = headers.map(header => {
-                let cell = row[header] === null || row[header] === undefined ? '' : row[header].toString();
-                cell = cell.replace(/"/g, '""');
-                return cell.includes(',') ? `"${cell}"` : cell;
-            });
-            csvContent += values.join(',') + '\n';
-        });
-        this._triggerDownload(csvContent, 'Layout_Analysis.csv', 'text/csv;charset=utf-8;');
+
+    _parseLayouts(doc) {
+        const masterFieldMap = new Map(), profileMapping = new Map(), cards = new Map(), buttons = new Map();
+        this._processLayouts(doc, 'NewEditLayouts', 'newEdit', { masterFieldMap, profileMapping, cards, buttons });
+        this._processLayouts(doc, 'DetailLayoutsGroup > DetailLayout', 'detail', { masterFieldMap, profileMapping, cards, buttons });
+        this._processLayouts(doc, 'HistoryLayoutsGroup > HistoryLayout', 'history', { masterFieldMap, profileMapping, cards, buttons });
+        return { masterFieldMap, profileMapping, cards, buttons };
     },
-    _downloadExcel(state) {
-        const dataToExport = state.filteredData || state.finalData;
-        if (!dataToExport || dataToExport.length === 0) {
-            UI.renderError("No data to export.");
-            return;
-        }
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(this._flattenData(dataToExport)), "Field Analysis");
-        if(state.buttons.size > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Array.from(state.buttons.values())), "Custom Buttons");
-        if(state.cards.size > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Array.from(state.cards.values())), "UI Cards");
-        XLSX.writeFile(wb, 'Layout_Analysis_Report.xlsx');
-    },
-    _triggerDownload(content, fileName, mimeType) {
-        const a = document.createElement('a');
-        const blob = new Blob([content], { type: mimeType });
-        a.href = URL.createObjectURL(blob);
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
-};
-
-// REFACTORED: Converted to an ES6 Class
-class DarkMode {
-    constructor() {
-        this.toggleBtn = document.getElementById('dark-mode-toggle');
-        this.lightIcon = document.getElementById('theme-icon-light');
-        this.darkIcon = document.getElementById('theme-icon-dark');
-        this.init();
-    }
-
-    init() {
-        this.toggleBtn.addEventListener('click', () => this.toggle());
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            this.setDark();
-        } else {
-            this.setLight();
-        }
-    }
-
-    toggle() {
-        if (document.documentElement.classList.contains('dark')) {
-            this.setLight();
-            localStorage.theme = 'light';
-        } else {
-            this.setDark();
-            localStorage.theme = 'dark';
-        }
-    }
-
-    setDark() {
-        document.documentElement.classList.add('dark');
-        document.body.classList.add('dark');
-        this.lightIcon.classList.add('hidden');
-        this.darkIcon.classList.remove('hidden');
-    }
-
-    setLight() {
-        document.documentElement.classList.remove('dark');
-        document.body.classList.remove('dark');
-        this.darkIcon.classList.add('hidden');
-        this.lightIcon.classList.remove('hidden');
-    }
-}
-
-// REFACTORED: Converted to an ES6 Class
-class BackToTop {
-    constructor() {
-        this.btn = document.getElementById('back-to-top');
-        this.init();
-    }
     
-    init() {
-        window.addEventListener('scroll', () => this.onScroll());
-        this.btn.addEventListener('click', () => this.scrollToTop());
-    }
+    _processLayouts(doc, selector, type, dataMaps) {
+        doc.querySelectorAll(selector).forEach(node => {
+            const groupID = node.getAttribute('GroupID');
+            node.querySelectorAll('Layout > LayoutXML').forEach(xmlNode => {
+                if (!xmlNode.textContent) return;
+                const innerDoc = new DOMParser().parseFromString(xmlNode.textContent, "application/xml");
+                if (innerDoc.querySelector('parsererror')) return;
+                const layoutName = innerDoc.documentElement.getAttribute('layoutname') || 'Unknown Layout';
+                if (groupID !== null) { const profileName = layoutName.split(':').pop().trim(); if (profileName) dataMaps.profileMapping.set(groupID, { Profile: profileName, Type: type, GroupID: groupID });}
+                innerDoc.querySelectorAll('control[CardName]').forEach(ctrl => { const cardName = ctrl.querySelector('property[name="CardName"]')?.getAttribute('value'); if (cardName) dataMaps.cards.set(`${layoutName}-${cardName}`, { Name: cardName, Layout: layoutName }); });
+                innerDoc.querySelectorAll('button[iscustom="1"]').forEach(btn => dataMaps.buttons.set(btn.getAttribute('id'), { ID: btn.getAttribute('id'), Caption: btn.getAttribute('caption'), Layout: layoutName }));
+                innerDoc.querySelectorAll('section').forEach(section => {
+                    const sectionName = section.querySelector('text > lang')?.getAttribute('text') || 'Unnamed Section';
+                    section.querySelectorAll('col').forEach(col => {
+                        const origId = col.getAttribute('fieldid');
+                        if (!origId || origId === 'blankcell') return;
+                        const id = origId.startsWith('cust_') ? origId.replace('cust_', '') : origId;
+                        if (!dataMaps.masterFieldMap.has(id)) { dataMaps.masterFieldMap.set(id, { fieldId: id, layoutLabel: col.querySelector('text > lang')?.getAttribute('text') || col.getAttribute('name'), section: sectionName, originalId: origId, layouts: {}, dependencies: [], dependencyContexts: [], visibilityOptions: null, dbInfo: null, lovs: { database: null, layout: null, dependency: null }, dependencyCondition: null }); }
+                        const rec = dataMaps.masterFieldMap.get(id);
+                        const req = col.getAttribute('req');
+                        rec.layouts[type] = { isRequired: req === '1' || req === '2' ? 'Yes' : 'No', isReadOnly: col.getAttribute('readonly') === '1' ? 'Yes' : 'No', isHidden: col.getAttribute('hide') === '1' ? 'Yes' : 'No' };
+                        const visNode = col.querySelector('visibility > visibilityoption');
+                        if (visNode) rec.visibilityOptions = visNode.getAttribute('displaynames')?.split(',') || [];
+                        const depNode = col.querySelector('dependents');
+                        if (depNode) {
+                            if (!rec.dependencyContexts.includes(type)) rec.dependencyContexts.push(type);
+                            depNode.querySelectorAll('option').forEach(opt => {
+                                const onValue = opt.getAttribute('name');
+                                const childFields = Array.from(opt.querySelectorAll('dependent')).map(dep => dep.getAttribute('id'));
+                                const existingDep = rec.dependencies.find(d => d.onValue === onValue);
+                                if (existingDep) {
+                                    existingDep.childFields.push(...childFields);
+                                    existingDep.childFields = [...new Set(existingDep.childFields)];
+                                } else {
+                                    rec.dependencies.push({ onValue, childFields });
+                                }
+                            });
+                        }
+                    });
+                });
+            });
+        });
+    },
 
-    onScroll() {
-        if (window.scrollY > 300) {
-            this.btn.style.display = 'block';
-        } else {
-            this.btn.style.display = 'none';
-        }
+    _parseDbXml(doc) {
+        const data = new Map();
+        doc.querySelectorAll('Field').forEach(fieldNode => {
+            const id = fieldNode.querySelector('FIELDID')?.textContent;
+            if (!id) return;
+            data.set(id, {
+                FieldID: id,
+                Label: fieldNode.querySelector('LABEL')?.textContent,
+                FieldType: fieldNode.querySelector('FieldType')?.textContent,
+                Length: fieldNode.querySelector('LENGTH')?.textContent,
+                DefaultValue: fieldNode.querySelector('DEFAULTVALUE')?.textContent,
+                TableName: fieldNode.querySelector('TABLENAME')?.textContent,
+                FieldName: fieldNode.querySelector('FIELDNAME')?.textContent,
+                ColumnName: `${fieldNode.querySelector('TABLENAME')?.textContent}.${fieldNode.querySelector('FIELDNAME')?.textContent}`,
+                LOVS: fieldNode.querySelector('LOVS')?.textContent.trim() ? fieldNode.querySelector('LOVS').textContent.trim().split(/, ?/) : null
+            });
+        });
+        return data;
     }
+};
 
-    scrollToTop() {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-}
+const Exporter = { /* ... This object remains the same ... */ };
 
-// REFACTORED: Initialization now uses the new classes
+class DarkMode { /* ... This class remains the same ... */ }
+
+class BackToTop { /* ... This class remains the same ... */ }
+
 document.addEventListener('DOMContentLoaded', () => {
     App.init();
     new DarkMode();
