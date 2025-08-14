@@ -188,12 +188,29 @@ const UI = {
         }
     },
 
-    copyToClipboard(text, buttonElement) {
+    // REFACTORED: Uses modern async Clipboard API with a fallback
+    async copyToClipboard(text, buttonElement) {
+        if (!navigator.clipboard) {
+            this.legacyCopyToClipboard(text, buttonElement);
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(text);
+            const originalText = buttonElement.textContent;
+            buttonElement.textContent = 'Copied!';
+            setTimeout(() => { buttonElement.textContent = originalText; }, 2000);
+        } catch (err) {
+            UI.renderError('Failed to copy text: ' + err);
+            console.error('Async copy failed:', err);
+        }
+    },
+
+    legacyCopyToClipboard(text, buttonElement) {
         const textArea = document.createElement('textarea');
         textArea.value = text;
-        textArea.style.top = "0";
-        textArea.style.left = "0";
-        textArea.style.position = "fixed";
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        textArea.style.top = '-9999px';
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
@@ -203,11 +220,9 @@ const UI = {
                 const originalText = buttonElement.textContent;
                 buttonElement.textContent = 'Copied!';
                 setTimeout(() => { buttonElement.textContent = originalText; }, 2000);
-            } else {
-                 UI.renderError('Failed to copy text.');
             }
         } catch (err) {
-            UI.renderError('Failed to copy text: ' + err);
+            UI.renderError('Failed to copy text.');
         }
         document.body.removeChild(textArea);
     },
@@ -220,6 +235,7 @@ const UI = {
         }, 1500);
     },
 
+    // REFACTORED: Uses DocumentFragment for performant rendering
     renderResults(data, allData) {
         let resultsCard = document.getElementById('step-results');
         if (!resultsCard) {
@@ -238,6 +254,8 @@ const UI = {
             return;
         }
 
+        const fragment = document.createDocumentFragment(); // Create a fragment
+
         const groupedData = data.reduce((acc, item) => {
             const section = item.section || 'Uncategorized';
             (acc[section] = acc[section] || []).push(item);
@@ -245,13 +263,14 @@ const UI = {
         }, {});
 
         Object.keys(groupedData).sort().forEach(section => {
-            const headerRow = tableBody.insertRow();
+            const headerRow = document.createElement('tr');
             headerRow.className = "section-header";
             headerRow.id = `section-header-${section.replace(/\s+/g, '-')}`;
             headerRow.innerHTML = `<th colspan="15" class="px-4 py-2 text-left text-sm font-bold">${section}</th>`;
+            fragment.appendChild(headerRow); // Append to fragment
             
             groupedData[section].forEach(item => {
-                const row = tableBody.insertRow();
+                const row = document.createElement('tr');
                 row.className = `hover:bg-gray-50 dark:hover:bg-slate-800`;
                 
                 const NA = { isRequired: '-', isReadOnly: '-', isHidden: '-' };
@@ -278,22 +297,23 @@ const UI = {
                     <td class="px-2 py-3 text-center text-sm">${history.isRequired}</td>
                     <td class="px-2 py-3 text-center text-sm">${history.isReadOnly}</td>
                     <td class="px-2 py-3 text-center text-sm border-r border-gray-200 dark:border-gray-700">${history.isHidden}</td>`;
+                fragment.appendChild(row); // Append to fragment
 
                 if (item.lovs.database || item.lovs.layout || item.lovs.dependency) {
-                    const detailRow = tableBody.insertRow();
+                    const detailRow = document.createElement('tr');
                     detailRow.className = 'details-row';
                     const cell = detailRow.insertCell();
                     cell.colSpan = 15;
                     cell.className = "px-6 py-4 bg-slate-50 dark:bg-slate-800/50";
-
                     const dbLovs = item.lovs.database ? `<li><strong class="text-slate-800 dark:text-slate-200">Database LOVs:</strong><div class="text-xs pl-2 text-slate-600 dark:text-slate-400">${item.lovs.database.join(' | ')}</div></li>` : '';
                     const layoutLovs = item.lovs.layout ? `<li><strong class="text-slate-800 dark:text-slate-200">Layout Visibility:</strong><div class="text-xs pl-2 text-slate-600 dark:text-slate-400">${item.lovs.layout.join(' | ')}</div></li>` : '';
                     const depLovs = item.lovs.dependency ? `<li><strong class="text-slate-800 dark:text-slate-200">Dependency Triggers:</strong><div class="text-xs pl-2 text-slate-600 dark:text-slate-400">${item.lovs.dependency.join(' | ')}</div></li>` : '';
-                    
                     cell.innerHTML = `<div class="text-sm"><ul class="space-y-1.5">${dbLovs}${layoutLovs}${depLovs}</ul></div>`;
+                    fragment.appendChild(detailRow); // Append to fragment
                 }
             });
         });
+        tableBody.appendChild(fragment); // Append fragment to DOM once
     },
     
     renderDashboard(container, state) {
@@ -364,8 +384,6 @@ const App = {
     state: {},
     init() { 
         this.reset(); 
-        DarkMode.init(); 
-        BackToTop.init();
         document.getElementById('start-again-btn').addEventListener('click', () => this.reset());
     },
     reset() {
@@ -426,12 +444,14 @@ const App = {
         
         const startTime = performance.now();
         try {
+            // Use the Web Worker for parsing
             const parsedResult = await ParserWorker.run('parseCombined', await file.text());
             const endTime = performance.now();
             this.state.parseTime = ((endTime - startTime) / 1000).toFixed(2);
             
             UI.updateFileDropzone(dropzone, 'success', file.name);
 
+            // Assign results from worker to state
             this.state.masterFieldMap = parsedResult.masterFieldMap;
             this.state.uiTabs = parsedResult.uiTabs;
             this.state.cards = parsedResult.cards;
@@ -490,16 +510,11 @@ const App = {
         UI.renderResults(this.state.finalData, this.state.finalData);
     },
     handleFilterChange() {
-        const searchEl = document.getElementById('filter-search');
-        const sectionEl = document.getElementById('filter-section');
-        const typeEl = document.getElementById('filter-type');
-        const mandatoryEl = document.getElementById('filter-mandatory');
-
         const filters = {
-            search: searchEl ? searchEl.value.toLowerCase() : '',
-            section: sectionEl ? sectionEl.value : '',
-            type: typeEl ? typeEl.value : '',
-            mandatory: mandatoryEl ? mandatoryEl.value : '',
+            search: document.getElementById('filter-search').value.toLowerCase(),
+            section: document.getElementById('filter-section').value,
+            type: document.getElementById('filter-type').value,
+            mandatory: document.getElementById('filter-mandatory').value,
         };
 
         this.state.filteredData = this.state.finalData.filter(item => {
@@ -624,105 +639,40 @@ FOR XML PATH('FinalOutput'), TYPE;`;
     }
 };
 
+// REFACTORED: Now a lightweight wrapper for the parser.js Web Worker
 const ParserWorker = {
     run(task, xml) {
+        const worker = new Worker('parser.js'); // The path to your new worker file
+        
         return new Promise((resolve, reject) => {
-            try {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(xml, "application/xml");
-                if (doc.querySelector('parsererror')) {
-                    throw new Error('XML parsing error. Please ensure the file content is valid XML and was copied correctly.');
+            // Listen for messages from the worker
+            worker.onmessage = (event) => {
+                const { success, data, error } = event.data;
+                if (success) {
+                    // Re-hydrate Maps from the arrays sent by the worker
+                    data.masterFieldMap = new Map(data.masterFieldMap);
+                    data.cards = new Map(data.cards);
+                    data.buttons = new Map(data.buttons);
+                    data.profileMapping = new Map(data.profileMapping);
+                    data.dbData = new Map(data.dbData);
+                    resolve(data);
+                } else {
+                    const workerError = new Error(error.message);
+                    workerError.stack = error.stack;
+                    reject(workerError);
                 }
-                
-                let result;
-                if (task === 'parseCombined') {
-                    const finalOutputNode = doc.querySelector('FinalOutput');
-                    if (!finalOutputNode) throw new Error('The root <FinalOutput> tag was not found. The SQL query may have failed or produced an unexpected result.');
-                    
-                    const layoutNode = finalOutputNode.querySelector('Layouts > Layouts');
-                    const fieldNode = finalOutputNode.querySelector('Fields > Fields');
-                    
-                    if (!layoutNode) throw new Error('Could not find <Layouts> data within <FinalOutput>. Please check the generated XML.');
-                    
-                    const layoutData = this._parseLayouts(layoutNode);
-                    const dbData = fieldNode ? this._parseDbXml(fieldNode) : new Map();
+                worker.terminate(); // Clean up the worker
+            };
 
-                    result = { ...layoutData, dbData };
-                }
-                resolve(result);
-            } catch (e) {
-                reject(e);
-            }
+            // Handle any errors that occur within the worker itself
+            worker.onerror = (event) => {
+                reject(new Error(`Worker error: ${event.message}`));
+                worker.terminate();
+            };
+
+            // Start the worker by sending it the data
+            worker.postMessage({ task, xml });
         });
-    },
-    _parseLayouts(doc) {
-        const masterFieldMap = new Map(), profileMapping = new Map(), cards = new Map(), buttons = new Map();
-        this._processLayouts(doc, 'NewEditLayouts', 'newEdit', { masterFieldMap, profileMapping, cards, buttons });
-        this._processLayouts(doc, 'DetailLayoutsGroup > DetailLayout', 'detail', { masterFieldMap, profileMapping, cards, buttons });
-        this._processLayouts(doc, 'HistoryLayoutsGroup > HistoryLayout', 'history', { masterFieldMap, profileMapping, cards, buttons });
-        return { masterFieldMap, profileMapping, cards, buttons };
-    },
-    _processLayouts(doc, selector, type, dataMaps) {
-        doc.querySelectorAll(selector).forEach(node => {
-            const groupID = node.getAttribute('GroupID');
-            node.querySelectorAll('Layout > LayoutXML').forEach(xmlNode => {
-                if (!xmlNode.textContent) return;
-                const innerDoc = new DOMParser().parseFromString(xmlNode.textContent, "application/xml");
-                if (innerDoc.querySelector('parsererror')) return;
-                const layoutName = innerDoc.documentElement.getAttribute('layoutname') || 'Unknown Layout';
-                if (groupID !== null) { const profileName = layoutName.split(':').pop().trim(); if (profileName) dataMaps.profileMapping.set(groupID, { Profile: profileName, Type: type, GroupID: groupID });}
-                innerDoc.querySelectorAll('control[CardName]').forEach(ctrl => { const cardName = ctrl.querySelector('property[name="CardName"]')?.getAttribute('value'); if (cardName) dataMaps.cards.set(`${layoutName}-${cardName}`, { Name: cardName, Layout: layoutName }); });
-                innerDoc.querySelectorAll('button[iscustom="1"]').forEach(btn => dataMaps.buttons.set(btn.getAttribute('id'), { ID: btn.getAttribute('id'), Caption: btn.getAttribute('caption'), Layout: layoutName }));
-                innerDoc.querySelectorAll('section').forEach(section => {
-                    const sectionName = section.querySelector('text > lang')?.getAttribute('text') || 'Unnamed Section';
-                    section.querySelectorAll('col').forEach(col => {
-                        const origId = col.getAttribute('fieldid');
-                        if (!origId || origId === 'blankcell') return;
-                        const id = origId.startsWith('cust_') ? origId.replace('cust_', '') : origId;
-                        if (!dataMaps.masterFieldMap.has(id)) { dataMaps.masterFieldMap.set(id, { fieldId: id, layoutLabel: col.querySelector('text > lang')?.getAttribute('text') || col.getAttribute('name'), section: sectionName, originalId: origId, layouts: {}, dependencies: [], dependencyContexts: [], visibilityOptions: null, dbInfo: null, lovs: { database: null, layout: null, dependency: null }, dependencyCondition: null }); }
-                        const rec = dataMaps.masterFieldMap.get(id);
-                        const req = col.getAttribute('req');
-                        rec.layouts[type] = { isRequired: req === '1' || req === '2' ? 'Yes' : 'No', isReadOnly: col.getAttribute('readonly') === '1' ? 'Yes' : 'No', isHidden: col.getAttribute('hide') === '1' ? 'Yes' : 'No' };
-                        const visNode = col.querySelector('visibility > visibilityoption');
-                        if (visNode) rec.visibilityOptions = visNode.getAttribute('displaynames')?.split(',') || [];
-                        const depNode = col.querySelector('dependents');
-                        if (depNode) {
-                            if (!rec.dependencyContexts.includes(type)) rec.dependencyContexts.push(type);
-                            depNode.querySelectorAll('option').forEach(opt => {
-                                const onValue = opt.getAttribute('name');
-                                const childFields = Array.from(opt.querySelectorAll('dependent')).map(dep => dep.getAttribute('id'));
-                                const existingDep = rec.dependencies.find(d => d.onValue === onValue);
-                                if (existingDep) {
-                                    existingDep.childFields.push(...childFields);
-                                    existingDep.childFields = [...new Set(existingDep.childFields)]; // remove duplicates
-                                } else {
-                                    rec.dependencies.push({ onValue, childFields });
-                                }
-                            });
-                        }
-                    });
-                });
-            });
-        });
-    },
-    _parseDbXml(doc) {
-        const data = new Map();
-        doc.querySelectorAll('Field').forEach(fieldNode => {
-            const id = fieldNode.querySelector('FIELDID')?.textContent;
-            if (!id) return;
-            data.set(id, {
-                FieldID: id,
-                Label: fieldNode.querySelector('LABEL')?.textContent,
-                FieldType: fieldNode.querySelector('FieldType')?.textContent,
-                Length: fieldNode.querySelector('LENGTH')?.textContent,
-                DefaultValue: fieldNode.querySelector('DEFAULTVALUE')?.textContent,
-                TableName: fieldNode.querySelector('TABLENAME')?.textContent,
-                FieldName: fieldNode.querySelector('FIELDNAME')?.textContent,
-                ColumnName: `${fieldNode.querySelector('TABLENAME')?.textContent}.${fieldNode.querySelector('FIELDNAME')?.textContent}`,
-                LOVS: fieldNode.querySelector('LOVS')?.textContent.trim() ? fieldNode.querySelector('LOVS').textContent.trim().split(/, ?/) : null
-            });
-        });
-        return data;
     }
 };
 
@@ -806,20 +756,24 @@ const Exporter = {
     }
 };
 
-const DarkMode = {
-    init() {
+// REFACTORED: Converted to an ES6 Class
+class DarkMode {
+    constructor() {
         this.toggleBtn = document.getElementById('dark-mode-toggle');
         this.lightIcon = document.getElementById('theme-icon-light');
         this.darkIcon = document.getElementById('theme-icon-dark');
-        
-        this.toggleBtn.addEventListener('click', () => this.toggle());
+        this.init();
+    }
 
+    init() {
+        this.toggleBtn.addEventListener('click', () => this.toggle());
         if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             this.setDark();
         } else {
             this.setLight();
         }
-    },
+    }
+
     toggle() {
         if (document.documentElement.classList.contains('dark')) {
             this.setLight();
@@ -828,40 +782,54 @@ const DarkMode = {
             this.setDark();
             localStorage.theme = 'dark';
         }
-    },
+    }
+
     setDark() {
         document.documentElement.classList.add('dark');
         document.body.classList.add('dark');
         this.lightIcon.classList.add('hidden');
         this.darkIcon.classList.remove('hidden');
-    },
+    }
+
     setLight() {
         document.documentElement.classList.remove('dark');
         document.body.classList.remove('dark');
         this.darkIcon.classList.add('hidden');
         this.lightIcon.classList.remove('hidden');
     }
-};
+}
 
-const BackToTop = {
-    init() {
+// REFACTORED: Converted to an ES6 Class
+class BackToTop {
+    constructor() {
         this.btn = document.getElementById('back-to-top');
+        this.init();
+    }
+    
+    init() {
         window.addEventListener('scroll', () => this.onScroll());
         this.btn.addEventListener('click', () => this.scrollToTop());
-    },
+    }
+
     onScroll() {
         if (window.scrollY > 300) {
             this.btn.style.display = 'block';
         } else {
             this.btn.style.display = 'none';
         }
-    },
+    }
+
     scrollToTop() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => App.init());
+// REFACTORED: Initialization now uses the new classes
+document.addEventListener('DOMContentLoaded', () => {
+    App.init();
+    new DarkMode();
+    new BackToTop();
+});
 </script>
 </body>
 </html>
