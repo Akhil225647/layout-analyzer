@@ -392,6 +392,47 @@
             background-color: var(--border-color);
         }
 
+        /* CSS for the new progress popup and blur effect */
+        .progress-overlay {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .progress-overlay.is-visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .progress-overlay::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+        .progress-card {
+            background-color: var(--card-background);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            box-shadow: 0 0 15px -3px rgba(0, 0, 0, 0.1), 0 0 6px -4px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 201; /* Ensure the card is on top of the overlay */
+        }
+        .ok-btn {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .ok-btn.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
     </style>
 </head>
 <body class="antialiased">
@@ -400,7 +441,7 @@
             <div class="text-center md:text-left">
                 <h1 class="text-4xl font-extrabold bg-clip-text text-transparent" style="background-image:linear-gradient(to right, var(--primary-start), var(--primary-end));">Layout Analyzer Pro</h1>
                 <p class="text-sm mt-1" style="color:var(--text-muted-color);">
-                    Paste the SQL from Step 2 into your DB, copy or save the XML as <code>Combined_Data.xml</code>, upload or paste it here.
+                    Paste the SQL from Step 2 into your DB, copy or save the XML as <code>Combined_Data.xml</code>, upload it here.
                 </p>
             </div>
             <div class="flex items-center gap-4 mt-2 md:mt-0">
@@ -427,7 +468,6 @@
             </div>
         </header>
 
-        <!-- New Milestone Tracker -->
         <div id="milestone-tracker" class="flex justify-between items-center mb-6 w-full"></div>
         
         <div id="error-container" class="mb-6"></div>
@@ -438,18 +478,124 @@
     <button id="back-to-top" class="p-3 rounded-full bg-primary-600 text-white hover:bg-primary-700 transition-colors" title="Back to Top">
         <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
     </button>
-
-    <!-- New Full-Screen Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 dark:bg-slate-950 dark:bg-opacity-80 transition-opacity duration-300 opacity-0 pointer-events-none flex flex-col items-center justify-center z-[100]">
-      <div class="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-2xl flex flex-col items-center">
-        <svg class="animate-spin h-16 w-16 text-primary-500 mb-4" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-        </svg>
-        <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">Processing Data...</div>
-        <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">Please wait, this may take a moment.</div>
-      </div>
+    
+    <div id="progress-overlay" class="progress-overlay">
+        <div class="progress-card w-full max-w-sm flex flex-col items-center">
+            <h3 id="progress-title" class="text-xl font-semibold mb-4 text-center" style="color:var(--text-color);">Preparing Report...</h3>
+            <div id="progress-bar-container" class="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div id="progress-bar" class="h-full rounded-full transition-all duration-300 ease-out" style="background-image:linear-gradient(to right, var(--primary-start), var(--primary-end)); width:0%;"></div>
+            </div>
+            <p id="progress-text" class="text-sm mt-2 font-semibold" style="color:var(--text-color);">0%</p>
+            <button id="ok-btn" class="ok-btn mt-6 btn px-6 py-3 rounded-lg text-white font-semibold shadow-md" style="background-image:linear-gradient(to right, var(--secondary-start), var(--secondary-end));">
+                OK
+            </button>
+        </div>
     </div>
+
+    <script id="worker-script" type="text/worker">
+        self.importScripts('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+
+        function _flattenData(data) {
+            const flat = [];
+            const totalItems = data.length;
+            let processedCount = 0;
+
+            for (const item of data) {
+                const na = {
+                    isRequired: 'N/A',
+                    isReadOnly: 'N/A',
+                    isHidden: 'N/A'
+                };
+                const newEdit = item.layouts.newEdit || na;
+                const detail = item.layouts.detail;
+                const history = item.layouts.history;
+                const db = item.dbInfo || {};
+                let defaultValues = [];
+                if (item.layoutDefaultValue) defaultValues.push(`Layout: ${item.layoutDefaultValue}`);
+                if (db.DefaultValue) defaultValues.push(`Field: ${db.DefaultValue}`);
+                const combinedDefaultValue = defaultValues.length > 0 ? defaultValues.join(', ') : '-';
+                let combinedLovs = '-';
+                if (item.lovs && item.lovs.layout && item.lovs.layout.length > 0) combinedLovs = item.lovs.layout.join(' | ');
+                else if (item.lovs && item.lovs.database && item.lovs.database.length > 0) combinedLovs = item.lovs.database.join(' | ');
+                const type = String(item.originalId || '').startsWith('cust_') ? 'Custom' : 'System';
+
+                flat.push({
+                    'Layout Label': item.layoutLabel,
+                    'DB Field Label': db.Label || '-',
+                    'Type': type,
+                    'Field ID': item.fieldId,
+                    'Layout State ID': item.layoutStateID || '-',
+                    'Layout State Name': item.layoutStateName || '-',
+                    'Data Type': db.FieldType || 'N/A',
+                    'Default Value': combinedDefaultValue,
+                    'Length': db.Length || '-',
+                    'Column Name': db.ColumnName || 'N/A',
+                    'New/Edit - Required': newEdit.isRequired,
+                    'New/Edit - ReadOnly': newEdit.isReadOnly,
+                    'New/Edit - Hidden': newEdit.isHidden,
+                    'Detail Status': detail ? (detail.isHidden === 'Yes' ? 'H' : 'D') : 'N/A',
+                    'History Status': history ? (history.isHidden === 'Yes' ? 'H' : 'D') : 'N/A',
+                    'LOVs': combinedLovs,
+                    'Dependency Condition': item.dependencyCondition || (item._isChild ? 'Child field (orphaned/parent in another state?)' : 'None')
+                });
+                
+                processedCount++;
+                if (processedCount % Math.ceil(totalItems / 10) === 0 || processedCount === totalItems) {
+                    self.postMessage({
+                        action: 'progress',
+                        payload: { percentage: (processedCount / totalItems) * 100 }
+                    });
+                }
+            }
+            return flat;
+        }
+
+        self.onmessage = (event) => {
+            const { action, payload } = event.data;
+
+            if (action === 'generateFile') {
+                const { type, data, buttons, cards } = payload;
+                let result;
+                
+                if (type === 'csv') {
+                    const flat = _flattenData(data);
+                    if (flat.length === 0) {
+                        return self.postMessage({ action: 'error', payload: { message: 'No data to export.' } });
+                    }
+                    const headers = Object.keys(flat[0]);
+                    const rows = [headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',')];
+                    flat.forEach(r => {
+                        const vals = headers.map(h => {
+                            const v = r[h] === null || r[h] === undefined ? '' : String(r[h]);
+                            return `"${v.replace(/"/g, '""')}"`;
+                        });
+                        rows.push(vals.join(','));
+                    });
+                    const csv = rows.join('\r\n');
+                    result = { type: 'csv', data: csv, filename: 'Layout_Analysis.csv', mime: 'text/csv;charset=utf-8;' };
+                } else if (type === 'excel') {
+                    const flatData = _flattenData(data);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(flatData), 'Field Analysis');
+                    if (buttons && buttons.length > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buttons), 'Custom Buttons');
+                    if (cards && cards.length > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cards), 'UI Cards');
+                    
+                    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                    result = { type: 'excel', data: wbout, filename: 'Layout_Analysis_Report.xlsx', mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
+                }
+
+                if (result) {
+                    if (result.type === 'excel') {
+                        self.postMessage({ action: 'downloadReady', payload: result }, [result.data]);
+                    } else {
+                        self.postMessage({ action: 'downloadReady', payload: result });
+                    }
+                }
+            } else if (action === 'progress') {
+                self.postMessage({ action: 'progress', payload });
+            }
+        };
+    </script>
 
     <script>
         /***** Templates & icons *****/
@@ -492,17 +638,6 @@
             <h3 class="font-semibold text-lg" style="color:var(--text-color);">Combined Data File</h3>
             <p class="text-sm mt-1" style="color:var(--text-muted-color);">Click or drop <code>Combined_Data.xml</code> here (max 10 MB)</p>
           </div>
-          <div class="flex items-center justify-between my-4" style="color:var(--text-muted-color);">
-            <div class="h-px w-full" style="background-color:var(--border-color);"></div>
-            <span class="mx-4 text-sm font-semibold">OR</span>
-            <div class="h-px w-full" style="background-color:var(--border-color);"></div>
-          </div>
-          <div class="flex flex-col gap-3">
-              <textarea id="xml-paste-area" placeholder="Paste XML content here..." rows="8" class="sql-box flex-grow p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"></textarea>
-              <button id="analyze-paste-btn" class="btn px-6 py-3 rounded-lg text-white font-semibold shadow-md bg-gradient-to-r" style="background-image:linear-gradient(to right, var(--primary-start), var(--primary-end));" disabled>
-                Analyze XML
-              </button>
-          </div>
         `,
             results: `
           <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
@@ -540,6 +675,11 @@
         const UI = {
             main: document.getElementById('main-content'),
             errorContainer: document.getElementById('error-container'),
+            progressOverlay: document.getElementById('progress-overlay'),
+            progressBar: document.getElementById('progress-bar'),
+            progressText: document.getElementById('progress-text'),
+            progressTitle: document.getElementById('progress-title'),
+            okBtn: document.getElementById('ok-btn'),
             columns: [
                 { id: 'layoutLabel', name: 'Layout Label', visible: true, pinned: true },
                 { id: 'dbLabel', name: 'DB Field Label', visible: true, pinned: true },
@@ -579,6 +719,27 @@
                 this.errorContainer.innerHTML = '';
             },
 
+            showProgressOverlay() {
+                this.progressOverlay.classList.add('is-visible');
+                document.body.classList.add('backdrop-blur');
+                this.okBtn.classList.remove('is-visible');
+                this.progressTitle.textContent = 'Preparing Report...';
+            },
+
+            hideProgressOverlay() {
+                this.progressOverlay.classList.remove('is-visible');
+                document.body.classList.remove('backdrop-blur');
+            },
+
+            updateProgressBar(percentage) {
+                this.progressBar.style.width = `${percentage}%`;
+                this.progressText.textContent = `${Math.round(percentage)}%`;
+                if (percentage >= 100) {
+                    this.progressTitle.textContent = 'Download Ready!';
+                    this.okBtn.classList.add('is-visible');
+                }
+            },
+            
             updateFileDropzone(zone, state, fileName = '') {
                 const icon = zone.querySelector('#drop-icon');
                 const p = zone.querySelector('p');
@@ -598,7 +759,6 @@
             },
 
             copyToClipboard(text, targetBtn) {
-                // Fallback to the more compatible document.execCommand('copy')
                 const ta = document.createElement('textarea');
                 ta.value = text;
                 ta.style.position = 'fixed';
@@ -676,7 +836,10 @@
                 cards: new Map(),
                 buttons: new Map(),
                 profileMapping: new Map(),
-                parseTime: 0
+                parseTime: 0,
+                isProcessingDownload: false,
+                worker: null,
+                downloadPayload: null
             },
 
             init() {
@@ -685,6 +848,29 @@
                 DarkMode.init();
                 BackToTop.init();
                 document.getElementById('start-again-btn').addEventListener('click', () => this.reset());
+                UI.okBtn.addEventListener('click', () => this.handleOKButtonClick());
+
+                // Initialize the Web Worker and handle messages
+                const workerScript = document.querySelector('#worker-script').textContent;
+                const workerBlob = new Blob([workerScript], { type: 'text/javascript' });
+                const workerUrl = URL.createObjectURL(workerBlob);
+                this.state.worker = new Worker(workerUrl);
+                
+                this.state.worker.onmessage = (event) => {
+                    const { action, payload } = event.data;
+                    if (action === 'downloadReady') {
+                        this.state.downloadPayload = payload;
+                        UI.updateProgressBar(100);
+                        Exporter._updateButtonState(true, 'Complete!');
+                    } else if (action === 'progress') {
+                        UI.updateProgressBar(payload.percentage);
+                    } else if (action === 'error') {
+                        this.state.isProcessingDownload = false;
+                        UI.hideProgressOverlay();
+                        Exporter._updateButtonState(false);
+                        UI.renderError(payload.message || 'An error occurred during file generation.');
+                    }
+                };
             },
 
             reset() {
@@ -696,7 +882,10 @@
                     cards: new Map(),
                     buttons: new Map(),
                     profileMapping: new Map(),
-                    parseTime: 0
+                    parseTime: 0,
+                    isProcessingDownload: false,
+                    worker: this.state.worker,
+                    downloadPayload: null
                 };
                 UI.columns.forEach(col => col.visible = true);
                 UI.main.innerHTML = '';
@@ -711,7 +900,7 @@
                 const steps = [
                     { name: 'Input ID', id: 'step1' },
                     { name: 'Copy SQL', id: 'step2' },
-                    { name: 'Upload/Paste XML', id: 'step3' },
+                    { name: 'Upload XML', id: 'step3' },
                     { name: 'Analyze Data', id: 'step4' }
                 ];
 
@@ -782,57 +971,24 @@
                 const card = UI.createStep(TEMPLATES.step3);
                 const drop = card.querySelector('#file-drop');
                 const input = card.querySelector('#file-input');
-                const pasteArea = card.querySelector('#xml-paste-area');
-                const analyzeBtn = card.querySelector('#analyze-paste-btn');
 
                 UI.updateFileDropzone(drop, 'initial');
                 this.setupFileHandler(drop, input, (file) => this.handleCombinedData(file));
-
-                pasteArea.addEventListener('input', () => {
-                    analyzeBtn.disabled = pasteArea.value.trim() === '';
-                });
-
-                analyzeBtn.addEventListener('click', () => {
-                    const pastedContent = pasteArea.value.trim();
-                    if (pastedContent) {
-                        this.handleCombinedData(pastedContent);
-                    } else {
-                        UI.renderError('Please paste XML content into the text area.');
-                    }
-                });
             },
 
             async handleCombinedData(data) {
                 UI.clearErrors();
                 const drop = document.querySelector('#file-drop');
-                const pasteArea = document.getElementById('xml-paste-area');
-                const analyzeBtn = document.getElementById('analyze-paste-btn');
-                const loadingOverlay = document.getElementById('loading-overlay');
 
-                let text;
-                let fileName = 'Pasted XML';
-                let isFile = data instanceof File;
-
-                if (isFile) {
-                    if (data.size > 10 * 1024 * 1024) {
-                        UI.renderError('File too large. Please upload a file smaller than 10 MB.');
-                        return;
-                    }
-                    UI.updateFileDropzone(drop, 'loading');
-                    text = await data.text();
-                    fileName = data.name;
-                } else {
-                    text = data;
-                    drop.classList.remove('has-file');
+                if (data.size > 10 * 1024 * 1024) {
+                    UI.renderError('File too large. Please upload a file smaller than 10 MB.');
+                    return;
                 }
-
-                if (pasteArea && analyzeBtn) {
-                    pasteArea.disabled = true;
-                    analyzeBtn.disabled = true;
-                    analyzeBtn.textContent = 'Processing...';
-                }
+                UI.updateFileDropzone(drop, 'loading');
+                const text = await data.text();
+                const fileName = data.name;
                 
-                loadingOverlay.classList.remove('opacity-0', 'pointer-events-none');
+                UI.showProgressOverlay();
 
                 const start = performance.now();
                 try {
@@ -841,9 +997,7 @@
                     const end = performance.now();
                     this.state.parseTime = ((end - start) / 1000).toFixed(2);
                     
-                    if (isFile) {
-                        UI.updateFileDropzone(drop, 'success', fileName);
-                    }
+                    UI.updateFileDropzone(drop, 'success', fileName);
 
                     this.state.masterFieldMap = parsed.masterFieldMap || new Map();
                     this.state.cards = parsed.cards || new Map();
@@ -852,7 +1006,7 @@
 
                     this.finalizeData(parsed.dbData || new Map());
 
-                    const finalCard = UI.createStep(`<div class="p-6 text-center" style="color:var(--text-muted-color);">Analysis Completed.</div>`);
+                    const finalCard = UI.createStep(`<div class="p-6 text-center" style="color:var(--text-muted-color);">Analysis complete — rendering report...</div>`);
                     finalCard.classList.add('final-animation');
                     
                     setTimeout(() => {
@@ -866,24 +1020,23 @@
                 } catch (err) {
                     console.error(err);
                     UI.renderError(err.message || 'Parsing failed.');
-                    if (isFile) {
-                        UI.updateFileDropzone(drop, 'initial');
-                    }
+                    UI.updateFileDropzone(drop, 'initial');
                 } finally {
-                    loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
-
-                    if (pasteArea && analyzeBtn) {
-                        pasteArea.disabled = false;
-                        analyzeBtn.disabled = false;
-                        analyzeBtn.textContent = 'Analyze Pasted XML';
-                    }
+                    UI.hideProgressOverlay();
                 }
             },
 
-            scrollToReport() {
-                const resultsContainer = document.querySelector('.table-container');
-                if (resultsContainer) {
-                    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            handleOKButtonClick() {
+                if (this.state.downloadPayload) {
+                    Exporter._triggerDownload(
+                        this.state.downloadPayload.data,
+                        this.state.downloadPayload.filename,
+                        this.state.downloadPayload.mime
+                    );
+                    this.state.isProcessingDownload = false;
+                    this.state.downloadPayload = null;
+                    UI.hideProgressOverlay();
+                    Exporter._updateButtonState(false);
                 }
             },
 
@@ -1497,84 +1650,44 @@
         /***** Exporter *****/
         const Exporter = {
             download(type) {
-                const data = App.state.filteredData || App.state.finalData;
-                if (type === 'csv') this._downloadCsv(data);
-                else if (type === 'excel') this._downloadExcel(App.state);
-            },
-            _flattenData(data) {
-                return data.map(item => {
-                    const na = {
-                        isRequired: 'N/A',
-                        isReadOnly: 'N/A',
-                        isHidden: 'N/A'
-                    };
-                    const newEdit = item.layouts.newEdit || na;
-                    const detail = item.layouts.detail;
-                    const history = item.layouts.history;
-                    const db = item.dbInfo || {};
-                    let defaultValues = [];
-                    if (item.layoutDefaultValue) defaultValues.push(`Layout: ${item.layoutDefaultValue}`);
-                    if (db.DefaultValue) defaultValues.push(`Field: ${db.DefaultValue}`);
-                    const combinedDefaultValue = defaultValues.length > 0 ? defaultValues.join(', ') : '-';
-                    let combinedLovs = '-';
-                    if (item.lovs && item.lovs.layout && item.lovs.layout.length > 0) combinedLovs = item.lovs.layout.join(' | ');
-                    else if (item.lovs && item.lovs.database && item.lovs.database.length > 0) combinedLovs = item.lovs.database.join(' | ');
-                    const type = String(item.originalId || '').startsWith('cust_') ? 'Custom' : 'System';
+                if (App.state.isProcessingDownload) {
+                    console.log('A download is already in progress. Please wait.');
+                    return;
+                }
 
-                    return {
-                        'Layout Label': item.layoutLabel,
-                        'DB Field Label': db.Label || '-',
-                        'Type': type,
-                        'Field ID': item.fieldId,
-                        'Layout State ID': item.layoutStateID || '-',
-                        'Layout State Name': item.layoutStateName || '-',
-                        'Data Type': db.FieldType || 'N/A',
-                        'Default Value': combinedDefaultValue,
-                        'Length': db.Length || '-',
-                        'Column Name': db.ColumnName || 'N/A',
-                        'New/Edit - Required': newEdit.isRequired,
-                        'New/Edit - ReadOnly': newEdit.isReadOnly,
-                        'New/Edit - Hidden': newEdit.isHidden,
-                        'Detail Status': detail ? (detail.isHidden === 'Yes' ? 'H' : 'D') : 'N/A',
-                        'History Status': history ? (history.isHidden === 'Yes' ? 'H' : 'D') : 'N/A',
-                        'LOVs': combinedLovs,
-                        'Dependency Condition': item.dependencyCondition || (item._isChild ? 'Child field (orphaned/parent in another state?)' : 'None')
-                    };
+                App.state.isProcessingDownload = true;
+                UI.showProgressOverlay();
+                UI.updateProgressBar(0);
+                this._updateButtonState(true, 'Generating...');
+                
+                const data = App.state.filteredData || App.state.finalData;
+                const buttons = Array.from(App.state.buttons.values());
+                const cards = Array.from(App.state.cards.values());
+
+                App.state.worker.postMessage({
+                    action: 'generateFile',
+                    payload: { type, data, buttons, cards }
                 });
             },
-            _downloadCsv(data) {
-                const flat = this._flattenData(data || []);
-                if (flat.length === 0) {
-                    UI.renderError('No data to export.');
-                    return;
+            
+            _updateButtonState(isProcessing, text = '') {
+                const csvBtn = document.getElementById('download-csv-btn');
+                const excelBtn = document.getElementById('download-excel-btn');
+                const btnText = text || (isProcessing ? 'Generating...' : 'Download');
+
+                if (csvBtn) {
+                    csvBtn.disabled = isProcessing;
+                    csvBtn.textContent = btnText === 'Download' ? 'Download CSV' : btnText;
                 }
-                const headers = Object.keys(flat[0]);
-                const rows = [headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',')];
-                flat.forEach(r => {
-                    const vals = headers.map(h => {
-                        const v = r[h] === null || r[h] === undefined ? '' : String(r[h]);
-                        return `"${v.replace(/"/g, '""')}"`;
-                    });
-                    rows.push(vals.join(','));
-                });
-                const csv = rows.join('\r\n');
-                this._triggerDownload(csv, 'Layout_Analysis.csv', 'text/csv;charset=utf-8;');
-            },
-            _downloadExcel(state) {
-                const dataToExport = state.filteredData || state.finalData;
-                if (!dataToExport || dataToExport.length === 0) {
-                    UI.renderError('No data to export.');
-                    return;
+                if (excelBtn) {
+                    excelBtn.disabled = isProcessing;
+                    excelBtn.textContent = btnText === 'Download' ? 'Download Excel' : btnText;
                 }
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(this._flattenData(dataToExport)), 'Field Analysis');
-                if (state.buttons && state.buttons.size > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Array.from(state.buttons.values())), 'Custom Buttons');
-                if (state.cards && state.cards.size > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Array.from(state.cards.values())), 'UI Cards');
-                XLSX.writeFile(wb, 'Layout_Analysis_Report.xlsx');
             },
+            
             _triggerDownload(content, filename, mime) {
                 const a = document.createElement('a');
-                const blob = new Blob([content], {
+                const blob = content instanceof Blob ? content : new Blob([content], {
                     type: mime
                 });
                 a.href = URL.createObjectURL(blob);
