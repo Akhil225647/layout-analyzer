@@ -1678,6 +1678,7 @@
                 return `-- Set your comma-separated Layout IDs here.
 DECLARE @LayoutIDs NVARCHAR(MAX) = '${ids}';
 
+-- Set your comma-separated Layout IDs here.
 DECLARE @LayoutXML XML;
 DECLARE @FieldXML XML;
 DECLARE @CardXML XML;
@@ -1687,24 +1688,30 @@ DECLARE @RawEncodedXML NVARCHAR(MAX);
 DECLARE @RawDetailXML NVARCHAR(MAX);
 
 -- Step 1: Get Raw HTML-encoded LayoutXML from a primary New/Edit layout to find field IDs.
-SELECT @RawEncodedXML = CAST(LayoutXML AS NVARCHAR(MAX))
-FROM LayoutGroupView
-WHERE LayoutID IN (
-    SELECT T.c.value('.', 'INT')
-    FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID>
-                                        <ID>') + '</ID>' AS XML)) AS A(B)
-    CROSS APPLY A.B.nodes('/ID') AS T(c)
-) AND LayoutType = 1;
+SELECT @RawEncodedXML = (
+    SELECT CAST(LayoutXML AS NVARCHAR(MAX))
+    FROM LayoutGroupView
+    WHERE LayoutID IN (
+        SELECT T.c.value('.', 'INT')
+        FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B)
+        CROSS APPLY A.B.nodes('/ID') AS T(c)
+    )
+    AND LayoutType = 1
+    FOR XML PATH(''), TYPE
+).value('.', 'NVARCHAR(MAX)');
 
 -- Step 1B: Get Raw HTML-encoded DetailLayout XML (for CardView extraction).
-SELECT @RawDetailXML = CAST(LayoutXML AS NVARCHAR(MAX))
-FROM LayoutGroupView
-WHERE LayoutID IN (
-    SELECT T.c.value('.', 'INT')
-    FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID>
-                                        <ID>') + '</ID>' AS XML)) AS A(B)
-    CROSS APPLY A.B.nodes('/ID') AS T(c)
-) AND LayoutType = 2;
+SELECT @RawDetailXML = (
+    SELECT CAST(LayoutXML AS NVARCHAR(MAX))
+    FROM LayoutGroupView
+    WHERE LayoutID IN (
+        SELECT T.c.value('.', 'INT')
+        FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B)
+        CROSS APPLY A.B.nodes('/ID') AS T(c)
+    )
+    AND LayoutType = 2
+    FOR XML PATH(''), TYPE
+).value('.', 'NVARCHAR(MAX)');
 
 -- Step 2: Manually decode the HTML-encoded XML to prepare for parsing.
 DECLARE @DecodedLayoutXML XML;
@@ -1712,22 +1719,21 @@ DECLARE @DecodedDetailXML XML;
 DECLARE @TempWrapper XML;
 
 -- decode New/Edit
-SET @TempWrapper = CAST('<root>' + @RawEncodedXML + '</root>' AS XML);
+SET @TempWrapper = CASE WHEN @RawEncodedXML IS NULL OR LEN(@RawEncodedXML)=0 THEN '<root />' ELSE CAST('<root>' + @RawEncodedXML + '</root>' AS XML) END;
 SET @DecodedLayoutXML = @TempWrapper.query('/root/*');
 
 -- decode Detail
-SET @TempWrapper = CAST('<root>' + @RawDetailXML + '</root>' AS XML);
+SET @TempWrapper = CASE WHEN @RawDetailXML IS NULL OR LEN(@RawDetailXML)=0 THEN '<root />' ELSE CAST('<root>' + @RawDetailXML + '</root>' AS XML) END;
 SET @DecodedDetailXML = @TempWrapper.query('/root/*');
 
 -- Step 3: Extract all unique custom field IDs (from New/Edit layout).
 INSERT INTO @CustomFieldIDs (FieldID)
-SELECT DISTINCT
-    TRY_CAST(REPLACE(T.c.value('@fieldid', 'NVARCHAR(100)'), 'cust_', '') AS INT)
+SELECT DISTINCT TRY_CAST(REPLACE(T.c.value('@fieldid', 'NVARCHAR(100)'), 'cust_', '') AS INT)
 FROM @DecodedLayoutXML.nodes('//col[@fieldid]') AS T(c)
 WHERE T.c.value('@fieldid', 'NVARCHAR(100)') LIKE 'cust_%'
-    AND ISNUMERIC(REPLACE(T.c.value('@fieldid', 'NVARCHAR(100)'), 'cust_', '')) = 1;
+  AND ISNUMERIC(REPLACE(T.c.value('@fieldid', 'NVARCHAR(100)'), 'cust_', '')) = 1;
 
--- ? FIXED: Extract Card IDs from DETAIL layout
+-- Extract Card IDs from DETAIL layout
 INSERT INTO @CardIDs (CardID)
 SELECT DISTINCT T.c.value('@controlid', 'INT')
 FROM @DecodedDetailXML.nodes('//control[@name="CardView"]') AS T(c)
@@ -1736,80 +1742,78 @@ WHERE ISNULL(T.c.value('@controlid', 'INT'), 0) <> 0;
 -- Step 4: Get the complete, properly-formed Layout XML for all specified layouts, types, and states.
 SET @LayoutXML = (
     SELECT
-        (SELECT T.StateID AS [@StateID], (
-            SELECT LayoutXML
-            FROM LayoutGroupView AS LGV
-            WHERE LGV.LayoutType = 1
-              AND LGV.StateID = T.StateID
-              AND LGV.LayoutID IN (
-                  SELECT C.value('.', 'INT')
-                  FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID>
-                                            <ID>') + '</ID>' AS XML)) AS A(B)
-                  CROSS APPLY A.B.nodes('/ID') AS T(c)
-              )
-            FOR XML PATH('Layout'), TYPE
-        ) AS [Layouts]
-        FROM (
-            SELECT DISTINCT StateID
-            FROM LayoutGroupView
-            WHERE LayoutType = 1
-              AND LayoutID IN (
-                  SELECT C.value('.', 'INT')
-                  FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID>
-                                            <ID>') + '</ID>' AS XML)) AS A(B)
-                  CROSS APPLY A.B.nodes('/ID') AS T(c)
-              )
-        ) AS T
-        FOR XML PATH('NewEditLayout'), ROOT('NewEditLayoutsGroup'), TYPE),
-        (SELECT T.StateID AS [@StateID], (
-            SELECT LayoutXML
-            FROM LayoutGroupView AS LGV
-            WHERE LGV.LayoutType = 2
-              AND LGV.StateID = T.StateID
-              AND LGV.LayoutID IN (
-                  SELECT C.value('.', 'INT')
-                  FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID>
-                                            <ID>') + '</ID>' AS XML)) AS A(B)
-                  CROSS APPLY A.B.nodes('/ID') AS T(c)
-              )
-            FOR XML PATH('Layout'), TYPE
-        ) AS [Layouts]
-        FROM (
-            SELECT DISTINCT StateID
-            FROM LayoutGroupView
-            WHERE LayoutType = 2
-              AND LayoutID IN (
-                  SELECT C.value('.', 'INT')
-                  FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID>
-                                            <ID>') + '</ID>' AS XML)) AS A(B)
-                  CROSS APPLY A.B.nodes('/ID') AS T(c)
-              )
-        ) AS T
-        FOR XML PATH('DetailLayout'), ROOT('DetailLayoutsGroup'), TYPE),
-        (SELECT T.StateID AS [@StateID], (
-            SELECT LayoutXML
-            FROM LayoutGroupView AS LGV
-            WHERE LGV.LayoutType = 4
-              AND LGV.StateID = T.StateID
-              AND LGV.LayoutID IN (
-                  SELECT C.value('.', 'INT')
-                  FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID>
-                                            <ID>') + '</ID>' AS XML)) AS A(B)
-                  CROSS APPLY A.B.nodes('/ID') AS T(c)
-              )
-        ) AS [Layouts]
-        FROM (
-            SELECT DISTINCT StateID
-            FROM LayoutGroupView
-            WHERE LayoutType = 4
-              AND LayoutID IN (
-                  SELECT C.value('.', 'INT')
-                  FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID>
-                                            <ID>') + '</ID>' AS XML)) AS A(B)
-                  CROSS APPLY A.B.nodes('/ID') AS T(c)
-              )
-        ) AS T
-        FOR XML PATH('HistoryLayout'), ROOT('HistoryLayoutsGroup'), TYPE)
+        (SELECT T.StateID AS [@StateID],
+            (SELECT LayoutXML
+             FROM LayoutGroupView AS LGV
+             WHERE LGV.LayoutType = 1
+               AND LGV.StateID = T.StateID
+               AND LGV.LayoutID IN (
+                   SELECT C.value('.', 'INT')
+                   FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B)
+                   CROSS APPLY A.B.nodes('/ID') AS T(c)
+               )
+             FOR XML PATH('Layout'), TYPE
+            ) AS [Layouts]
+         FROM (
+             SELECT DISTINCT StateID
+             FROM LayoutGroupView
+             WHERE LayoutType = 1
+               AND LayoutID IN (
+                   SELECT C.value('.', 'INT')
+                   FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B)
+                   CROSS APPLY A.B.nodes('/ID') AS T(c)
+               )
+         ) AS T
+         FOR XML PATH('NewEditLayout'), ROOT('NewEditLayoutsGroup'), TYPE
+        ),
+        (SELECT T.StateID AS [@StateID],
+            (SELECT LayoutXML
+             FROM LayoutGroupView AS LGV
+             WHERE LGV.LayoutType = 2
+               AND LGV.StateID = T.StateID
+               AND LGV.LayoutID IN (
+                   SELECT C.value('.', 'INT')
+                   FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B)
+                   CROSS APPLY A.B.nodes('/ID') AS T(c)
+               )
+             FOR XML PATH('Layout'), TYPE
+            ) AS [Layouts]
+         FROM (
+             SELECT DISTINCT StateID
+             FROM LayoutGroupView
+             WHERE LayoutType = 2
+               AND LayoutID IN (
+                   SELECT C.value('.', 'INT')
+                   FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B)
+                   CROSS APPLY A.B.nodes('/ID') AS T(c)
+               )
+         ) AS T
+         FOR XML PATH('DetailLayout'), ROOT('DetailLayoutsGroup'), TYPE
+        ),
+        (SELECT T.StateID AS [@StateID],
+            (SELECT LayoutXML
+             FROM LayoutGroupView AS LGV
+             WHERE LGV.LayoutType = 4
+               AND LGV.StateID = T.StateID
+               AND LGV.LayoutID IN (
+                   SELECT C.value('.', 'INT')
+                   FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B)
+                   CROSS APPLY A.B.nodes('/ID') AS T(c)
+               )
+             FOR XML PATH('Layout'), TYPE
+            ) AS [Layouts]
+         FROM (
+             SELECT DISTINCT StateID
+             FROM LayoutGroupView
+             WHERE LayoutType = 4
+               AND LayoutID IN (
+                   SELECT C.value('.', 'INT')
+                   FROM (SELECT CAST('<ID>' + REPLACE(@LayoutIDs, ',', '</ID><ID>') + '</ID>' AS XML)) AS A(B)
+                   CROSS APPLY A.B.nodes('/ID') AS T(c)
+               )
+         ) AS T
+         FOR XML PATH('HistoryLayout'), ROOT('HistoryLayoutsGroup'), TYPE
+        )
     FOR XML PATH('Layouts'), TYPE
 );
 
@@ -1818,43 +1822,39 @@ SELECT @CardXML = (
     SELECT C.CardID AS [@CardID], C.CardXML AS [CardXML]
     FROM Cards C
     WHERE C.CardID IN (SELECT CardID FROM @CardIDs)
-    FOR XML PATH('Card'), ROOT('Cards')
+    FOR XML PATH('Card'), ROOT('Cards'), TYPE
 );
 
 -- Step 6: Get the Field schema XML for all the custom fields found.
 WITH FieldSchema AS (
-    SELECT CS.FIELDID, CS.LABEL, CS.TYPE, FTC.Caption AS FieldType,
-           CS.LENGTH, CS.DEFAULTVALUE, CS.INTERNALLABEL, CS.TABLENAME, CS.FIELDNAME
+    SELECT CS.FIELDID, CS.LABEL, CS.TYPE, FTC.Caption AS FieldType, CS.LENGTH, CS.DEFAULTVALUE, CS.INTERNALLABEL, CS.TABLENAME, CS.FIELDNAME
     FROM CUSTOMFIELDSCHEMA CS
     LEFT JOIN FieldTypeCodeView FTC ON CS.TYPE = FTC.FIELDTYPE
     WHERE CS.FIELDID IN (SELECT FieldID FROM @CustomFieldIDs)
 ),
 LOVData AS (
     SELECT T1.FIELDID,
-        STUFF((
-            SELECT ', ' + T2.DISPLAYNAME
-            FROM CustomFieldLookup T2
-            WHERE T2.FIELDID = T1.FIELDID
-            FOR XML PATH('')
-        ), 1, 2, '') AS LOVS
+           STUFF((
+               SELECT ', ' + T2.DISPLAYNAME
+               FROM CustomFieldLookup T2
+               WHERE T2.FIELDID = T1.FIELDID
+               FOR XML PATH('')
+           ), 1, 2, '') AS LOVS
     FROM CustomFieldLookup T1
     WHERE T1.FIELDID IN (SELECT FieldID FROM @CustomFieldIDs)
     GROUP BY T1.FIELDID
 )
 SELECT @FieldXML = (
-    SELECT FS.FIELDID, FS.LABEL, FS.FieldType, FS.LENGTH, FS.DEFAULTVALUE,
-           FS.INTERNALLABEL, FS.TABLENAME, FS.FIELDNAME, LD.LOVS
+    SELECT FS.FIELDID, FS.LABEL, FS.FieldType, FS.LENGTH, FS.DEFAULTVALUE, FS.INTERNALLABEL, FS.TABLENAME, FS.FIELDNAME, LD.LOVS
     FROM FieldSchema FS
     LEFT JOIN LOVData LD ON FS.FIELDID = LD.FIELDID
-    FOR XML PATH('Field'), ROOT('Fields')
+    FOR XML PATH('Field'), ROOT('Fields'), TYPE
 );
 
 -- Step 7: Combine Layout, Card, and Field XML into a single final output.
-SELECT
-    @LayoutXML AS [Layouts],
-    @CardXML AS [Cards],
-    @FieldXML AS [Fields]
-FOR XML PATH('FinalOutput'), TYPE;`;
+SELECT @LayoutXML AS [Layouts], @CardXML AS [Cards], @FieldXML AS [Fields]
+FOR XML PATH('FinalOutput'), TYPE;
+`;
             }
         };
 
