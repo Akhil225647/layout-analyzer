@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="light">
+<html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -9,7 +9,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         tailwind.config = {
-            plugins: [require('daisyui')],
             darkMode: 'class',
             theme: {
                 extend: {
@@ -26,6 +25,19 @@
                             '800': '#1e40af',
                             '900': '#1e3a8a',
                             '950': '#172554'
+                        },
+                        secondary: {
+                            '50': '#ecfdf5',
+                            '100': '#d1fae5',
+                            '200': '#a7f3d0',
+                            '300': '#6ee7b7',
+                            '400': '#34d399',
+                            '500': '#10b981',
+                            '600': '#059669',
+                            '700': '#047857',
+                            '800': '#065f46',
+                            '900': '#064e3b',
+                            '950': '#022c22',
                         }
                     }
                 }
@@ -36,46 +48,156 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet" />
     <style>
-        :root {
-            --primary-start: #4338ca;
-            --primary-end: #6d28d9;
-            --secondary-start: #059669;
-            --secondary-end: #10b981;
-            --background-color: #f8fafc;
-            --card-background: #ffffff;
-            --text-color: #111827;
-            --text-muted-color: #4b5563;
-            --border-color: #e2e8f0;
-            --sql-bg: #020617;
-            --sql-text: #e2e8f0;
+        @keyframes spin-slow {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .animate-spin-slow {
+            animation: spin-slow 3s linear infinite;
         }
 
+        @keyframes neon-pulse {
+            0% {
+                box-shadow: 0 0 5px var(--highlight-color), 0 0 10px var(--highlight-color), 0 0 20px var(--highlight-color);
+            }
+            50% {
+                box-shadow: 0 0 2px var(--highlight-color), 0 0 5px var(--highlight-color), 0 0 10px var(--highlight-color);
+            }
+            100% {
+                box-shadow: 0 0 5px var(--highlight-color), 0 0 10px var(--highlight-color), 0 0 20px var(--highlight-color);
+            }
+        }
+
+        /* Base Light Theme */
+        :root, .light {
+            --primary-start: #5a5f73;
+            --primary-end: #8679b3;
+            --secondary-start: #ff852b;
+            --secondary-end: #00b8d9;
+            --background-color: #f7f9fc;
+            --card-background: #ffffff;
+            --text-color: #1a202c;
+            --text-muted-color: #718096;
+            --border-color: #e2e8f0;
+            --sql-bg: #f2f4f7;
+            --sql-text: #2d3748;
+            --highlight-color: #ff852b;
+        }
+
+        /* Base Dark Theme */
         .dark {
-            --background-color: #0b1120;
-            --card-background: #1e293b;
+            --primary-start: #00f2fe;
+            --primary-end: #4f58f7;
+            --secondary-start: #ff0080;
+            --secondary-end: #8a00ff;
+            --background-color: #0d0c1d;
+            --card-background: #1a192f;
             --text-color: #e2e8f0;
             --text-muted-color: #94a3b8;
-            --border-color: #334155;
-            --sql-bg: #0f172a;
-            --sql-text: #cbd5e1;
+            --border-color: #3f3e53;
+            --sql-bg: #0d0c1d;
+            --sql-text: #00f2fe;
+            --highlight-color: #ff0080;
         }
 
-        .theme-emerald {
-            --primary-start: #047857;
-            --primary-end: #10b981;
-            --secondary-start: #4338ca;
-            --secondary-end: #6d28d9;
+        /* Cyberpunk Theme */
+        .theme-cyberpunk {
+            --primary-start: #00f2fe;
+            --primary-end: #4f58f7;
+            --secondary-start: #ff0080;
+            --secondary-end: #8a00ff;
+            --background-color: #0d0c1d;
+            --card-background: #1a192f;
+            --text-color: #e2e8f0;
+            --text-muted-color: #94a3b8;
+            --border-color: #3f3e53;
+            --sql-bg: #0d0c1d;
+            --sql-text: #00f2fe;
+            --highlight-color: #ff0080;
         }
 
-        .theme-rose {
-            --primary-start: #be123c;
-            --primary-end: #f43f5e;
-            --secondary-start: #059669;
-            --secondary-end: #10b981;
+        /* Dracula Theme */
+        .theme-dracula {
+            --primary-start: #ff6e6e;
+            --primary-end: #bd93f9;
+            --secondary-start: #50fa7b;
+            --secondary-end: #8be9fd;
+            --background-color: #282a36;
+            --card-background: #44475a;
+            --text-color: #f8f8f2;
+            --text-muted-color: #bd93f9;
+            --border-color: #6272a4;
+            --sql-bg: #21222c;
+            --sql-text: #f1fa8c;
+            --highlight-color: #ff79c6;
         }
 
-        html {
-            scroll-behavior: smooth;
+        /* Retro Arcade Theme */
+        .theme-retro-arcade {
+            --primary-start: #ff0070;
+            --primary-end: #00e5ff;
+            --secondary-start: #ffeb3b;
+            --secondary-end: #00ff80;
+            --background-color: #0d121c;
+            --card-background: #1e2536;
+            --text-color: #e0f7fa;
+            --text-muted-color: #b3e5fc;
+            --border-color: #4a5d7c;
+            --sql-bg: #0d121c;
+            --sql-text: #ffeb3b;
+            --highlight-color: #ff0070;
+        }
+
+        /* Atom One Light Theme */
+        .theme-atom-one-light {
+            --primary-start: #a3339f;
+            --primary-end: #0066d9;
+            --secondary-start: #28a745;
+            --secondary-end: #fdc329;
+            --background-color: #fafafa;
+            --card-background: #ffffff;
+            --text-color: #383a42;
+            --text-muted-color: #a0a1a7;
+            --border-color: #d1d4d8;
+            --sql-bg: #f0f2f4;
+            --sql-text: #565d64;
+            --highlight-color: #a3339f;
+        }
+
+        /* Bluloco Light Theme */
+        .theme-bluloco-light {
+            --primary-start: #3e63f9;
+            --primary-end: #9944fa;
+            --secondary-start: #00c7a5;
+            --secondary-end: #00e0b3;
+            --background-color: #f7f9fc;
+            --card-background: #ffffff;
+            --text-color: #1f2937;
+            --text-muted-color: #6b7280;
+            --border-color: #e5e7eb;
+            --sql-bg: #eff3f7;
+            --sql-text: #3e63f9;
+            --highlight-color: #3e63f9;
+        }
+
+        /* Snazzy Light Theme */
+        .theme-snazzy-light {
+            --primary-start: #b64177;
+            --primary-end: #8655c6;
+            --secondary-start: #5a8d9a;
+            --secondary-end: #77c2c1;
+            --background-color: #f3f3f3;
+            --card-background: #ffffff;
+            --text-color: #4b4b4b;
+            --text-muted-color: #999999;
+            --border-color: #dddddd;
+            --sql-bg: #ececec;
+            --sql-text: #4a4a4a;
+            --highlight-color: #b64177;
         }
 
         body {
@@ -91,7 +213,7 @@
             background-color: var(--card-background);
             border-radius: 0.75rem;
             border: 1px solid var(--border-color);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+            box-shadow: 0 0 15px -3px rgb(0 0 0 / 0.1), 0 0 6px -4px rgb(0 0 0 / 0.1);
             opacity: 0;
             transform: translateY(20px);
             transition: opacity 0.6s ease-out, transform 0.6s ease-out, background-color 0.3s ease, border-color 0.3s ease;
@@ -103,36 +225,24 @@
         }
 
         .file-drop-zone {
-            border: 2px dashed #cbd5e1;
+            border: 2px dashed var(--border-color);
             transition: all 0.3s ease;
         }
 
         .file-drop-zone.dragover {
             border-color: var(--primary-start);
-            background-color: #f5f3ff;
-        }
-
-        .dark .file-drop-zone.dragover {
-            background-color: #282f44;
+            background-color: rgba(0, 242, 254, 0.1);
         }
 
         .file-drop-zone.has-file {
             border-color: var(--secondary-start);
-            background-color: #f0fdfa;
-        }
-
-        .dark .file-drop-zone.has-file {
-            background-color: #1a3c35;
+            background-color: rgba(255, 0, 128, 0.1);
         }
 
         .file-drop-zone.is-loading {
             border-color: var(--primary-start);
-            background-color: #f5f3ff;
+            background-color: rgba(0, 242, 254, 0.1);
             animation: pulse 2s infinite;
-        }
-
-        .dark .file-drop-zone.is-loading {
-            background-color: #282f44;
         }
 
         @keyframes pulse {
@@ -151,11 +261,20 @@
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 7px 20px -4px rgb(0 0 0 / 0.2);
+            box-shadow: 0 0 10px var(--primary-start);
         }
 
         .sql-box {
             font-family: 'Fira Code', monospace;
+            background-color: var(--sql-bg);
+            color: var(--sql-text);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 5px var(--highlight-color);
+            transition: all 0.3s ease;
+        }
+
+        .sql-box:focus {
+            box-shadow: 0 0 10px var(--primary-start);
         }
 
         .table-container {
@@ -171,20 +290,16 @@
             z-index: 10;
             background-color: var(--card-background);
             border-bottom: 2px solid var(--border-color);
-            color: var(--text-muted-color);
+            color: var(--text-color);
         }
 
         .section-header > th {
             position: sticky;
             top: 52px;
             z-index: 9;
-            background-color: #f1f5f9;
-            color: #334155;
-        }
-
-        .dark .section-header > th {
-            background-color: #334155;
-            color: #e2e8f0;
+            background-color: var(--card-background);
+            color: var(--primary-start);
+            border-bottom: 2px solid var(--primary-start);
         }
 
         .tooltip {
@@ -196,8 +311,8 @@
         .tooltip .tooltiptext {
             visibility: hidden;
             width: 200px;
-            background-color: #1f2937;
-            color: #fff;
+            background-color: var(--card-background);
+            color: var(--text-color);
             text-align: center;
             border-radius: 6px;
             padding: 5px 0;
@@ -213,11 +328,6 @@
         .tooltip:hover .tooltiptext {
             visibility: visible;
             opacity: 1;
-        }
-
-        .progress-bar {
-            background-image: linear-gradient(to right, var(--primary-start), var(--primary-end));
-            transition: width 0.5s ease;
         }
 
         @keyframes pop-in {
@@ -246,6 +356,8 @@
             bottom: 2rem;
             right: 2rem;
             display: none;
+            box-shadow: 0 0 10px var(--primary-start);
+            animation: neon-pulse 1.5s infinite;
         }
 
         .pinned-col {
@@ -270,6 +382,16 @@
             padding-right: 0.5rem;
             color: var(--text-muted-color);
         }
+
+        .results-table-body-row {
+            background-color: var(--card-background);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .results-table-body-row:hover {
+            background-color: var(--border-color);
+        }
+
     </style>
 </head>
 <body class="antialiased">
@@ -277,20 +399,24 @@
         <header class="mb-8 relative flex flex-col md:flex-row items-center justify-center md:justify-between gap-4">
             <div class="text-center md:text-left">
                 <h1 class="text-4xl font-extrabold bg-clip-text text-transparent" style="background-image:linear-gradient(to right, var(--primary-start), var(--primary-end));">Layout Analyzer Pro</h1>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Paste the SQL from Step 2 into your DB, save the XML as <code>Combined_Data.xml</code>, upload it here.
+                <p class="text-sm mt-1" style="color:var(--text-muted-color);">
+                    Paste the SQL from Step 2 into your DB, copy or save the XML as <code>Combined_Data.xml</code>, upload or paste it here.
                 </p>
             </div>
             <div class="flex items-center gap-4 mt-2 md:mt-0">
-                <select id="color-theme-select" class="px-3 py-2 rounded-lg bg-gray-100 dark:bg-slate-700 text-sm border border-gray-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <option value="default">Indigo</option>
-                    <option value="emerald">Emerald</option>
-                    <option value="rose">Rose</option>
+                <select id="color-theme-select" class="px-3 py-2 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-primary-500" style="background-color:var(--card-background); color:var(--text-color); border-color:var(--border-color);">
+                    <option value="system">System Default</option>
+                    <option value="cyberpunk">Cyberpunk</option>
+                    <option value="dracula">Dracula</option>
+                    <option value="retro-arcade">Retro Arcade</option>
+                    <option value="atom-one-light">Atom One Light</option>
+                    <option value="bluloco-light">Bluloco Light</option>
+                    <option value="snazzy-light">Snazzy Light</option>
                 </select>
-                <button id="start-again-btn" class="btn px-4 py-2 rounded-lg bg-gray-100 dark:bg-slate-700 text-sm border border-gray-200 dark:border-slate-600 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
+                <button id="start-again-btn" class="btn px-4 py-2 rounded-lg text-sm border hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors" style="background-color:var(--card-background); color:var(--text-color); border-color:var(--border-color);">
                     Start Over
                 </button>
-                <button id="dark-mode-toggle" class="btn p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors" title="Toggle theme">
+                <button id="dark-mode-toggle" class="btn p-2 rounded-full hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors" title="Toggle theme" style="background-color:var(--card-background); color:var(--text-color); border-color:var(--border-color);">
                     <svg id="icon-light" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707M18 12a6 6 0 11-12 0 6 6 0 0112 0z" />
                     </svg>
@@ -301,16 +427,9 @@
             </div>
         </header>
 
-        <div id="progress-container" class="mb-6 hidden">
-            <div class="flex justify-between items-center mb-2">
-                <span id="progress-text" class="text-sm font-medium text-primary-600"></span>
-                <span id="progress-percent" class="text-sm font-medium text-primary-600"></span>
-            </div>
-            <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5">
-                <div id="progress-bar" class="h-2.5 rounded-full progress-bar" style="width:0;"></div>
-            </div>
-        </div>
-
+        <!-- New Milestone Tracker -->
+        <div id="milestone-tracker" class="flex justify-between items-center mb-6 w-full"></div>
+        
         <div id="error-container" class="mb-6"></div>
 
         <main id="main-content" class="space-y-6"></main>
@@ -320,71 +439,83 @@
         <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
     </button>
 
-  <script>
-    /***** Templates & icons *****/
-    const ICONS = {
-        upload: `<svg class="w-12 h-12 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>`,
-        spinner: `<svg class="animate-spin w-12 h-12 text-primary-500" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>`,
-        success: `<svg class="w-12 h-12" style="color: var(--secondary-start);" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/></svg>`,
-        lock: `<svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path d="M5.5 8a.5.5 0 01.5-.5h2a.5.5 0 010 1h-2a.5.5 0 01-.5-.5zM7.5 10a.5.5 0 000 1h2a.5.5 0 000-1h-2zM11.5 8a.5.5 0 01.5-.5h2a.5.5 0 010 1h-2a.5.5 0 01-.5-.5zM13.5 10a.5.5 0 000 1h2a.5.5 0 000-1h-2z" /></svg>`,
-        milestoneCompleted: `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
-        milestoneActive: `<svg class="h-6 w-6 animate-spin-slow" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 3a3 3 0 110-6 3 3 0 010 6z" /></svg>`,
-        milestonePending: `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`
-    };
+    <!-- New Full-Screen Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 dark:bg-slate-950 dark:bg-opacity-80 transition-opacity duration-300 opacity-0 pointer-events-none flex flex-col items-center justify-center z-[100]">
+      <div class="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-2xl flex flex-col items-center">
+        <svg class="animate-spin h-16 w-16 text-primary-500 mb-4" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">Processing Data...</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">Please wait, this may take a moment.</div>
+      </div>
+    </div>
 
-    const TEMPLATES = {
-        step1: `
+    <script>
+        /***** Templates & icons *****/
+        const ICONS = {
+            upload: `<svg class="w-12 h-12" style="color:var(--primary-start);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>`,
+            spinner: `<svg class="animate-spin w-12 h-12" style="color:var(--primary-start);" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>`,
+            success: `<svg class="w-12 h-12" style="color: var(--secondary-start);" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/></svg>`,
+            lock: `<svg class="w-4 h-4" style="color:var(--text-muted-color);" fill="currentColor" viewBox="0 0 20 20"><path d="M5.5 8a.5.5 0 01.5-.5h2a.5.5 0 010 1h-2a.5.5 0 01-.5-.5zM7.5 10a.5.5 0 000 1h2a.5.5 0 000-1h-2zM11.5 8a.5.5 0 01.5-.5h2a.5.5 0 010 1h-2a.5.5 0 01-.5-.5zM13.5 10a.5.5 0 000 1h2a.5.5 0 000-1h-2z" /></svg>`,
+            milestoneCompleted: `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color:var(--secondary-end);"><path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" /></svg>`,
+            milestoneActive: `<svg class="h-6 w-6 animate-spin-slow" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color:var(--primary-start);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2a10 10 0 0110 10c0 5.523-4.477 10-10 10s-10-4.477-10-10a10 10 0 0110-10z" /><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" /></svg>`,
+            milestonePending: `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color:var(--text-muted-color);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`
+        };
+
+        const TEMPLATES = {
+            step1: `
           <h2 class="text-xl font-bold mb-2" style="color: var(--primary-start);">Step 1: Provide Layout ID(s)</h2>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4" style="color:var(--text-muted-color);">Enter numeric Layout ID(s) separated by commas (e.g., 317492,317493)</p>
-          <div class="flex flex-col md:flex-row gap-3">
-            <input id="layout-id-input" placeholder="e.g., 317492, 317493" class="sql-box flex-grow p-3 rounded-lg bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          <p class="text-sm mt-4" style="color:var(--text-muted-color);">Enter numeric Layout ID(s) separated by commas (e.g., 317492,317493)</p>
+          <div class="flex flex-col md:flex-row gap-3 mt-4">
+            <input id="layout-id-input" placeholder="e.g., 317492, 317493" class="sql-box flex-grow p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
             <button id="generate-layout-query-btn" class="btn px-6 py-3 rounded-lg text-white font-semibold shadow-md bg-gradient-to-r" style="background-image:linear-gradient(to right, var(--primary-start), var(--primary-end));" disabled>
               Generate Query
             </button>
           </div>
         `,
-        step2: `
-          <h2 class="text-xl font-bold mb-2" style="color: var(--primary-start);">Step 2: Fetch Combined Data</h2>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4" style="color:var(--text-muted-color);">Run the generated SQL in your DB and save the single-cell XML output as <code>Combined_Data.xml</code></p>
-          <div class="flex flex-col md:flex-row gap-3 items-stretch">
-            <input type="text" readonly class="sql-box p-3 rounded-lg w-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700" id="sql-output" />
+            step2: `
+          <h2 class="text-xl font-bold mb-2" style="color: var(--primary-start);">Step 2: Get Query and Copy</h2>
+          <p class="text-sm mt-4" style="color:var(--text-muted-color);">Run the generated SQL in your DB and save the single-cell XML output as <code>Combined_Data.xml</code></p>
+          <div class="flex flex-col md:flex-row gap-3 items-stretch mt-4">
+            <input type="text" readonly class="sql-box p-3 rounded-lg w-full" id="sql-output" />
             <button class="btn copy-btn px-6 py-3 rounded-lg text-white font-semibold shadow-md bg-gradient-to-r" style="background-image:linear-gradient(to right, var(--primary-start), var(--primary-end));">
               Copy SQL
             </button>
           </div>
         `,
-        step3: `
+            step3: `
           <h2 class="text-xl font-bold mb-2" style="color: var(--primary-start);">Step 3: Upload Combined XML</h2>
-   <div class="file-drop-zone rounded-xl text-center p-8 transition-colors flex flex-col items-center justify-center" id="file-drop">
-  <input type="file" accept=".xml" id="file-input" class="hidden" />
-  <div id="drop-icon" class="mb-2">${ICONS.upload}</div>
-  <h3 class="font-semibold text-lg">Combined Data File</h3>
-  <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" style="color:var(--text-muted-color);">Click or drop <code>Layout.xml</code> here (max 10 MB)</p>
-</div>
-          <div class="flex items-center justify-between my-4 text-gray-400 dark:text-gray-600">
-            <div class="h-px w-full bg-gray-200 dark:bg-slate-700"></div>
+          <div class="file-drop-zone rounded-xl text-center p-8 transition-colors flex flex-col items-center justify-center" id="file-drop">
+            <input type="file" accept=".xml" id="file-input" class="hidden" />
+            <div id="drop-icon" class="mb-2">${ICONS.upload}</div>
+            <h3 class="font-semibold text-lg" style="color:var(--text-color);">Combined Data File</h3>
+            <p class="text-sm mt-1" style="color:var(--text-muted-color);">Click or drop <code>Combined_Data.xml</code> here (max 10 MB)</p>
+          </div>
+          <div class="flex items-center justify-between my-4" style="color:var(--text-muted-color);">
+            <div class="h-px w-full" style="background-color:var(--border-color);"></div>
             <span class="mx-4 text-sm font-semibold">OR</span>
-            <div class="h-px w-full bg-gray-200 dark:bg-slate-700"></div>
+            <div class="h-px w-full" style="background-color:var(--border-color);"></div>
           </div>
           <div class="flex flex-col gap-3">
-              <textarea id="xml-paste-area" placeholder="Paste XML content here..." rows="8" class="sql-box flex-grow p-3 rounded-lg bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500"></textarea>
+              <textarea id="xml-paste-area" placeholder="Paste XML content here..." rows="8" class="sql-box flex-grow p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"></textarea>
               <button id="analyze-paste-btn" class="btn px-6 py-3 rounded-lg text-white font-semibold shadow-md bg-gradient-to-r" style="background-image:linear-gradient(to right, var(--primary-start), var(--primary-end));" disabled>
                 Analyze XML
               </button>
           </div>
         `,
-        results: `
+            results: `
           <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
             <h2 class="text-2xl font-bold" style="color: var(--primary-start);">Analysis Report</h2>
             <div class="flex flex-col sm:flex-row gap-3">
               <div class="relative inline-block text-left">
-                <button id="column-options-btn" type="button" class="btn px-4 py-2 rounded-lg bg-gray-100 dark:bg-slate-700 text-sm border border-gray-200 dark:border-slate-600 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors flex items-center gap-2">
+                <button id="column-options-btn" type="button" class="btn px-4 py-2 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors flex items-center gap-2" style="background-color:var(--card-background); color:var(--text-color); border-color:var(--border-color);">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M10.5 6a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM12.75 6a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 6a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM10.5 12a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM12.75 12a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 12a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM10.5 18a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM12.75 18a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 18a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" /></svg>
                   Table Options
                 </button>
-                <div id="column-options-menu" class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 hidden z-20">
+                <div id="column-options-menu" class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg hidden z-20" style="background-color:var(--card-background); color:var(--text-color); border-color:var(--border-color);">
                   <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="column-options-btn">
-                    <div class="px-4 py-2 text-xs text-gray-400 uppercase tracking-wider">Show/Hide Columns</div>
+                    <div class="px-4 py-2 text-xs uppercase tracking-wider" style="color:var(--text-muted-color);">Show/Hide Columns</div>
                     <div id="column-checkboxes" class="px-2"></div>
                   </div>
                 </div>
@@ -394,192 +525,150 @@
             </div>
           </div>
           <div id="dashboard" class="mb-6"></div>
-          <div id="filter-bar" class="bg-gray-100 dark:bg-slate-800 p-4 rounded-xl mb-6 border border-gray-200 dark:border-slate-700"></div>
+          <div id="filter-bar" class="p-4 rounded-xl mb-6 border" style="background-color:var(--card-background); border-color:var(--border-color);"></div>
           <div class="table-container">
-            <table class="w-full divide-y divide-gray-200 dark:divide-slate-700">
-              <thead class="bg-gray-50 dark:bg-slate-900"></thead>
-              <tbody id="results-table-body" class="bg-white divide-y divide-gray-200 dark:divide-slate-700"></tbody>
+            <table class="w-full divide-y" style="border-color:var(--border-color);">
+              <thead style="background-color:var(--card-background);"></thead>
+              <tbody id="results-table-body" class="divide-y" style="border-color:var(--border-color);"></tbody>
             </table>
           </div>
-          <p id="perf-metrics" class="text-xs text-center mt-4 text-gray-500 dark:text-gray-400"></p>
+          <p id="perf-metrics" class="text-xs text-center mt-4" style="color:var(--text-muted-color);"></p>
         `
-    };
+        };
 
-    /***** UI helpers *****/
-    const UI = {
-        main: document.getElementById('main-content'),
-        errorContainer: document.getElementById('error-container'),
-        progressContainer: document.getElementById('progress-container'),
-        progressBar: document.getElementById('progress-bar'),
-        progressText: document.getElementById('progress-text'),
-        progressPercent: document.getElementById('progress-percent'),
-        columns: [
-            { id: 'layoutLabel', name: 'Layout Label', visible: true, pinned: true },
-            { id: 'dbLabel', name: 'DB Field Label', visible: true, pinned: true },
-            { id: 'type', name: 'Type', visible: true },
-            { id: 'fieldId', name: 'Field ID', visible: true },
-            { id: 'layoutStateID', name: 'Layout State ID', visible: true },
-            { id: 'layoutStateName', name: 'Layout State Name', visible: true },
-            { id: 'dataType', name: 'Data Type', visible: true },
-            { id: 'defaultValue', name: 'Default Value', visible: true },
-            { id: 'length', name: 'Length', visible: true },
-            { id: 'columnName', name: 'Column Name', visible: true },
-            { id: 'newEditRequired', name: 'Req?', group: 'New/Edit', visible: true },
-            { id: 'newEditRO', name: 'RO?', group: 'New/Edit', visible: true },
-            { id: 'newEditHidden', name: 'Hid?', group: 'New/Edit', visible: true },
-            { id: 'detailStatus', name: 'Detail Status', visible: true },
-            { id: 'historyStatus', name: 'History Status', visible: true },
-            { id: 'lovs', name: 'LOVs', visible: true },
-            { id: 'dependencyCondition', name: 'Dependency Condition', visible: true }
-        ],
+        /***** UI helpers *****/
+        const UI = {
+            main: document.getElementById('main-content'),
+            errorContainer: document.getElementById('error-container'),
+            columns: [
+                { id: 'layoutLabel', name: 'Layout Label', visible: true, pinned: true },
+                { id: 'dbLabel', name: 'DB Field Label', visible: true, pinned: true },
+                { id: 'type', name: 'Type', visible: true },
+                { id: 'fieldId', name: 'Field ID', visible: true },
+                { id: 'layoutStateID', name: 'Layout State ID', visible: true },
+                { id: 'layoutStateName', name: 'Layout State Name', visible: true },
+                { id: 'dataType', name: 'Data Type', visible: true },
+                { id: 'defaultValue', name: 'Default Value', visible: true },
+                { id: 'length', name: 'Length', visible: true },
+                { id: 'columnName', name: 'Column Name', visible: true },
+                { id: 'newEditRequired', name: 'Req?', group: 'New/Edit', visible: true },
+                { id: 'newEditRO', name: 'RO?', group: 'New/Edit', visible: true },
+                { id: 'newEditHidden', name: 'Hid?', group: 'New/Edit', visible: true },
+                { id: 'detailStatus', name: 'Detail Status', visible: true },
+                { id: 'historyStatus', name: 'History Status', visible: true },
+                { id: 'lovs', name: 'LOVs', visible: true },
+                { id: 'dependencyCondition', name: 'Dependency Condition', visible: true }
+            ],
 
-        createStep(html) {
-            const card = document.createElement('section');
-            card.className = 'step-card p-6';
-            card.innerHTML = html;
-            this.main.appendChild(card);
-            setTimeout(() => card.classList.add('is-visible'), 20);
-            return card;
-        },
+            createStep(html) {
+                const card = document.createElement('section');
+                card.className = 'step-card p-6';
+                card.innerHTML = html;
+                this.main.appendChild(card);
+                setTimeout(() => card.classList.add('is-visible'), 20);
+                return card;
+            },
 
-        renderError(msg) {
-            this.errorContainer.innerHTML = `<div class="error-card p-4 rounded-lg bg-red-100 dark:bg-red-900 border-l-4 border-red-500 shadow-md">
-                                        <div class="text-sm text-red-700 dark:text-red-200">${this.escapeHtml(msg)}</div>
-                                      </div>`;
-            console.error(msg);
-        },
-        clearErrors() {
-            this.errorContainer.innerHTML = '';
-        },
+            renderError(msg) {
+                this.errorContainer.innerHTML = `<div class="error-card p-4 rounded-lg bg-red-100 dark:bg-red-900 border-l-4 border-red-500 shadow-md">
+                                            <div class="text-sm text-red-700 dark:text-red-200">${this.escapeHtml(msg)}</div>
+                                          </div>`;
+                console.error(msg);
+            },
+            clearErrors() {
+                this.errorContainer.innerHTML = '';
+            },
 
-        updateProgress(step, total, text) {
-            this.progressContainer.classList.remove('hidden');
-            const percent = Math.round((step / total) * 100);
-            this.progressBar.style.width = percent + '%';
-            this.progressText.textContent = `Step ${step} of ${total}: ${text}`;
-            this.progressPercent.textContent = `${percent}%`;
-        },
+            updateFileDropzone(zone, state, fileName = '') {
+                const icon = zone.querySelector('#drop-icon');
+                const p = zone.querySelector('p');
+                zone.classList.remove('dragover', 'is-loading', 'has-file');
+                if (state === 'loading') {
+                    icon.innerHTML = ICONS.spinner;
+                    zone.classList.add('is-loading');
+                    p.textContent = 'Processing...';
+                } else if (state === 'success') {
+                    icon.innerHTML = ICONS.success;
+                    zone.classList.add('has-file');
+                    p.textContent = fileName;
+                } else {
+                    icon.innerHTML = ICONS.upload;
+                    p.textContent = 'Click or drop Combined_Data.xml here (max 10 MB)';
+                }
+            },
 
-        updateFileDropzone(zone, state, fileName = '') {
-            const icon = zone.querySelector('#drop-icon');
-            const p = zone.querySelector('p');
-            zone.classList.remove('dragover', 'is-loading', 'has-file');
-            if (state === 'loading') {
-                icon.innerHTML = ICONS.spinner;
-                zone.classList.add('is-loading');
-                p.textContent = 'Processing...';
-            } else if (state === 'success') {
-                icon.innerHTML = ICONS.success;
-                zone.classList.add('has-file');
-                p.textContent = fileName;
-            } else {
-                icon.innerHTML = ICONS.upload;
-                p.textContent = 'Click or drop Combined_Data.xml here (max 10 MB)';
-            }
-        },
-
-        copyToClipboard(text, targetBtn) {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(() => {
+            copyToClipboard(text, targetBtn) {
+                // Fallback to the more compatible document.execCommand('copy')
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.select();
+                try {
+                    document.execCommand('copy');
                     const orig = targetBtn.textContent;
                     targetBtn.textContent = 'Copied!';
                     setTimeout(() => targetBtn.textContent = orig, 1500);
-                }).catch(err => this.renderError('Copy failed: ' + err));
-                return;
-            }
-            // fallback
-            const ta = document.createElement('textarea');
-            ta.value = text;
-            ta.style.position = 'fixed';
-            ta.style.left = '-9999px';
-            document.body.appendChild(ta);
-            ta.select();
-            try {
-                document.execCommand('copy');
-                const orig = targetBtn.textContent;
-                targetBtn.textContent = 'Copied!';
-                setTimeout(() => targetBtn.textContent = orig, 1500);
-            } catch (e) {
-                this.renderError('Copy failed: ' + e);
-            }
-            document.body.removeChild(ta);
-        },
-
-        escapeHtml(s) {
-            if (s === null || s === undefined) return '';
-            return String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-        },
-
-        computePinnedOffset() {
-            const th1 = document.querySelector('thead th.pinned-col-1');
-            const th2 = document.querySelector('thead th.pinned-col-2');
-            if (th1) {
-                document.documentElement.style.setProperty('--pinned-col-1-width', `${Math.ceil(th1.getBoundingClientRect().width)}px`);
-            }
-            if (th2) {
-                document.documentElement.style.setProperty('--pinned-col-2-width', `${Math.ceil(th2.getBoundingClientRect().width)}px`);
-            }
-        },
-
-        setupColumnVisibility() {
-            const btn = document.getElementById('column-options-btn');
-            const menu = document.getElementById('column-options-menu');
-            const checkboxes = document.getElementById('column-checkboxes');
-
-            btn.addEventListener('click', () => {
-                menu.classList.toggle('hidden');
-            });
-
-            document.addEventListener('click', (event) => {
-                if (!btn.contains(event.target) && !menu.contains(event.target)) {
-                    menu.classList.add('hidden');
+                } catch (e) {
+                    this.renderError('Copy failed: ' + e);
                 }
-            });
+                document.body.removeChild(ta);
+            },
 
-            UI.columns.forEach(col => {
-                const div = document.createElement('div');
-                div.className = 'flex items-center space-x-2 py-1';
+            escapeHtml(s) {
+                if (s === null || s === undefined) return '';
+                return String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+            },
 
-                const pinIcon = col.pinned ? `<svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path d="M5.5 8a.5.5 0 01.5-.5h2a.5.5 0 010 1h-2a.5.5 0 01-.5-.5zM7.5 10a.5.5 0 000 1h2a.5.5 0 000-1h-2zM11.5 8a.5.5 0 01.5-.5h2a.5.5 0 010 1h-2a.5.5 0 01-.5-.5zM13.5 10a.5.5 0 000 1h2a.5.5 0 000-1h-2z" /></svg>` : '';
-                
-                div.innerHTML = `
-                    <input type="checkbox" id="col-${col.id}" name="${col.id}" ${col.visible ? 'checked' : ''} class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 rounded">
-                    <label for="col-${col.id}" class="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                        ${col.name} ${pinIcon}
-                    </label>
-                `;
-                div.querySelector('input').addEventListener('change', (e) => {
-                    col.visible = e.target.checked;
-                    App.renderResults(App.state.filteredData, App.state.finalData);
+            computePinnedOffset() {
+                const th1 = document.querySelector('thead th.pinned-col-1');
+                const th2 = document.querySelector('thead th.pinned-col-2');
+                if (th1) {
+                    document.documentElement.style.setProperty('--pinned-col-1-width', `${Math.ceil(th1.getBoundingClientRect().width)}px`);
+                }
+                if (th2) {
+                    document.documentElement.style.setProperty('--pinned-col-2-width', `${Math.ceil(th2.getBoundingClientRect().width)}px`);
+                }
+            },
+
+            setupColumnVisibility() {
+                const btn = document.getElementById('column-options-btn');
+                const menu = document.getElementById('column-options-menu');
+                const checkboxes = document.getElementById('column-checkboxes');
+
+                btn.addEventListener('click', () => {
+                    menu.classList.toggle('hidden');
                 });
-                checkboxes.appendChild(div);
-            });
-        }
-    };
 
-    /***** App core *****/
-    const App = {
-        state: {
-            layoutIds: [],
-            masterFieldMap: new Map(),
-            finalData: [],
-            filteredData: [],
-            cards: new Map(),
-            buttons: new Map(),
-            profileMapping: new Map(),
-            parseTime: 0
-        },
+                document.addEventListener('click', (event) => {
+                    if (!btn.contains(event.target) && !menu.contains(event.target)) {
+                        menu.classList.add('hidden');
+                    }
+                });
 
-        init() {
-            this.reset();
-            ThemeSwitcher.init();
-            DarkMode.init();
-            BackToTop.init();
-            document.getElementById('start-again-btn').addEventListener('click', () => this.reset());
-        },
+                UI.columns.forEach(col => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center space-x-2 py-1';
 
-        reset() {
-            this.state = {
+                    const pinIcon = col.pinned ? `<svg class="w-4 h-4" style="color:var(--text-muted-color);" fill="currentColor" viewBox="0 0 20 20"><path d="M5.5 8a.5.5 0 01.5-.5h2a.5.5 0 010 1h-2a.5.5 0 01-.5-.5zM7.5 10a.5.5 0 000 1h2a.5.5 0 000-1h-2zM11.5 8a.5.5 0 01.5-.5h2a.5.5 0 010 1h-2a.5.5 0 01-.5-.5zM13.5 10a.5.5 0 000 1h2a.5.5 0 000-1h-2z" /></svg>` : '';
+                    
+                    div.innerHTML = `
+                        <input type="checkbox" id="col-${col.id}" name="${col.id}" ${col.visible ? 'checked' : ''} class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 rounded">
+                        <label for="col-${col.id}" class="text-sm font-medium" style="color:var(--text-color);">${col.name} ${pinIcon}</label>
+                    `;
+                    div.querySelector('input').addEventListener('change', (e) => {
+                        col.visible = e.target.checked;
+                        App.renderResults(App.state.filteredData, App.state.finalData);
+                    });
+                    checkboxes.appendChild(div);
+                });
+            }
+        };
+
+        /***** App core *****/
+        const App = {
+            state: {
                 layoutIds: [],
                 masterFieldMap: new Map(),
                 finalData: [],
@@ -588,341 +677,838 @@
                 buttons: new Map(),
                 profileMapping: new Map(),
                 parseTime: 0
-            };
-            UI.columns.forEach(col => col.visible = true);
-            UI.main.innerHTML = '';
-            UI.clearErrors();
-            UI.progressContainer.classList.add('hidden');
-            this.updateMilestones(1);
-            this.renderStep1();
-        },
+            },
 
-        updateMilestones(step) {
-            const tracker = document.getElementById('milestone-tracker');
-            if (!tracker) {
-                const header = document.querySelector('header');
-                const trackerDiv = document.createElement('div');
-                trackerDiv.id = 'milestone-tracker';
-                trackerDiv.className = 'flex justify-between items-center mb-6 max-w-2xl mx-auto';
-                header.insertAdjacentElement('afterend', trackerDiv);
-            }
+            init() {
+                this.reset();
+                ThemeSwitcher.init();
+                DarkMode.init();
+                BackToTop.init();
+                document.getElementById('start-again-btn').addEventListener('click', () => this.reset());
+            },
 
-            const steps = [
-                { name: 'Provide IDs', id: 'step1' },
-                { name: 'Get Query', id: 'step2' },
-                { name: 'Analyze Data', id: 'step3' }
-            ];
+            reset() {
+                this.state = {
+                    layoutIds: [],
+                    masterFieldMap: new Map(),
+                    finalData: [],
+                    filteredData: [],
+                    cards: new Map(),
+                    buttons: new Map(),
+                    profileMapping: new Map(),
+                    parseTime: 0
+                };
+                UI.columns.forEach(col => col.visible = true);
+                UI.main.innerHTML = '';
+                UI.clearErrors();
+                this.updateMilestones(1);
+                this.renderStep1();
+            },
 
-            const links = steps.map((s, index) => {
-                const isCompleted = index < step - 1;
-                const isActive = index === step - 1;
-                let statusClass = 'text-gray-400 dark:text-gray-600';
-                let icon;
-
-                if (isActive) {
-                    statusClass = 'text-primary-600 dark:text-primary-400 font-semibold';
-                    icon = ICONS.milestoneActive;
-                } else if (isCompleted) {
-                    statusClass = 'text-secondary-600 dark:text-secondary-400';
-                    icon = ICONS.milestoneCompleted;
-                } else {
-                    icon = ICONS.milestonePending;
-                }
+            updateMilestones(step) {
+                const tracker = document.getElementById('milestone-tracker');
                 
-                return `
-                    <div class="flex flex-col items-center">
-                        <div class="text-3xl">${icon}</div>
-                        <div class="text-sm mt-1 text-center ${statusClass}">${s.name}</div>
-                    </div>
-                `;
-            }).join(`
-                <div class="flex-grow h-1 mx-4 transition-all duration-500" style="background-color:${step > 1 ? 'var(--secondary-start)' : 'var(--border-color)'}"></div>
-            `);
+                const steps = [
+                    { name: 'Input ID', id: 'step1' },
+                    { name: 'Copy SQL', id: 'step2' },
+                    { name: 'Upload/Paste XML', id: 'step3' },
+                    { name: 'Analyze Data', id: 'step4' }
+                ];
 
-            document.getElementById('milestone-tracker').innerHTML = links;
-        },
+                const links = steps.map((s, index) => {
+                    const isCompleted = index < step - 1;
+                    const isActive = index === step - 1;
+                    let statusClass = '';
+                    let icon;
 
-        renderStep1() {
-            UI.updateProgress(1, 3, 'Awaiting Layout IDs');
-            const card = UI.createStep(TEMPLATES.step1);
-            const input = card.querySelector('#layout-id-input');
-            const btn = card.querySelector('#generate-layout-query-btn');
-            input.addEventListener('input', () => btn.disabled = input.value.trim() === '');
-            btn.addEventListener('click', () => this.handleLayoutQuery(input.value.trim()));
-        },
+                    if (isActive) {
+                        statusClass = 'text-primary-start font-semibold';
+                        icon = ICONS.milestoneActive;
+                    } else if (isCompleted) {
+                        statusClass = 'text-secondary-end';
+                        icon = ICONS.milestoneCompleted;
+                    } else {
+                        statusClass = 'text-text-muted-color';
+                        icon = ICONS.milestonePending;
+                    }
+                    
+                    return `
+                        <div class="flex flex-col items-center">
+                            <div class="text-3xl">${icon}</div>
+                            <div class="text-sm mt-1 text-center ${statusClass}">${s.name}</div>
+                        </div>
+                    `;
+                }).join(`
+                    <div class="flex-grow h-1 mx-4 transition-all duration-500" style="background-color:${step > 1 ? 'var(--secondary-start)' : 'var(--border-color)'}"></div>
+                    <div class="flex-grow h-1 mx-4 transition-all duration-500" style="background-color:${step > 2 ? 'var(--secondary-start)' : 'var(--border-color)'}"></div>
+                    <div class="flex-grow h-1 mx-4 transition-all duration-500" style="background-color:${step > 3 ? 'var(--secondary-start)' : 'var(--border-color)'}"></div>
+                `);
 
-        handleLayoutQuery(value) {
-            UI.clearErrors();
-            this.state.layoutIds = value.split(',').map(s => s.trim()).filter(Boolean);
-            if (this.state.layoutIds.length === 0) {
-                UI.renderError('Enter at least one valid numeric Layout ID.');
-                return;
-            }
-            if (this.state.layoutIds.some(id => isNaN(id))) {
-                UI.renderError('All Layout IDs must be numeric.');
-                return;
-            }
-            UI.updateProgress(2, 3, 'Generating Combined Query');
-            this.updateMilestones(2);
-            const card = UI.createStep(TEMPLATES.step2);
-            const sql = SQLGenerator.combinedQuery(this.state.layoutIds.join(',')).replace(/\s\s+/g, ' ').trim();
-            card.querySelector('#sql-output').value = sql;
-            const copyBtn = card.querySelector('.copy-btn');
-            copyBtn.addEventListener('click', () => UI.copyToClipboard(sql, copyBtn));
-            this.renderUploadStep();
-        },
+                tracker.innerHTML = links;
+            },
 
-        renderUploadStep() {
-            UI.updateProgress(2, 3, 'Awaiting Combined XML');
-            const card = UI.createStep(TEMPLATES.step3);
-            const drop = card.querySelector('#file-drop');
-            const input = card.querySelector('#file-input');
-            const pasteArea = card.querySelector('#xml-paste-area');
-            const analyzeBtn = card.querySelector('#analyze-paste-btn');
+            renderStep1() {
+                this.updateMilestones(1);
+                const card = UI.createStep(TEMPLATES.step1);
+                const input = card.querySelector('#layout-id-input');
+                const btn = card.querySelector('#generate-layout-query-btn');
+                input.addEventListener('input', () => btn.disabled = input.value.trim() === '');
+                btn.addEventListener('click', () => this.handleLayoutQuery(input.value.trim()));
+            },
 
-            UI.updateFileDropzone(drop, 'initial');
-            this.setupFileHandler(drop, input, (file) => this.handleCombinedData(file));
-
-            pasteArea.addEventListener('input', () => {
-                analyzeBtn.disabled = pasteArea.value.trim() === '';
-            });
-
-            analyzeBtn.addEventListener('click', () => {
-                const pastedContent = pasteArea.value.trim();
-                if (pastedContent) {
-                    this.handleCombinedData(pastedContent);
-                } else {
-                    UI.renderError('Please paste XML content into the text area.');
-                }
-            });
-        },
-
-        async handleCombinedData(data) {
-            UI.clearErrors();
-            const drop = document.querySelector('#file-drop');
-            const pasteArea = document.getElementById('xml-paste-area');
-            const analyzeBtn = document.getElementById('analyze-paste-btn');
-
-            let text;
-            let fileName = 'Pasted XML';
-            let isFile = data instanceof File;
-
-            if (isFile) {
-                if (data.size > 10 * 1024 * 1024) {
-                    UI.renderError('File too large. Please upload a file smaller than 10 MB.');
+            handleLayoutQuery(value) {
+                UI.clearErrors();
+                this.state.layoutIds = value.split(',').map(s => s.trim()).filter(Boolean);
+                if (this.state.layoutIds.length === 0) {
+                    UI.renderError('Enter at least one valid numeric Layout ID.');
                     return;
                 }
-                UI.updateFileDropzone(drop, 'loading');
-                text = await data.text();
-                fileName = data.name;
-            } else {
-                text = data;
-                drop.classList.remove('has-file');
-            }
+                const invalidIds = this.state.layoutIds.filter(id => !/^\d+$/.test(id));
+                if (invalidIds.length > 0) {
+                    UI.renderError(`Invalid Layout ID(s) found: ${invalidIds.join(', ')}. All IDs must be valid positive integers.`);
+                    return;
+                }
+                this.updateMilestones(2);
+                const card = UI.createStep(TEMPLATES.step2);
+                const sql = SQLGenerator.combinedQuery(this.state.layoutIds.join(',')).replace(/\s\s+/g, ' ').trim();
+                card.querySelector('#sql-output').value = sql;
+                const copyBtn = card.querySelector('.copy-btn');
+                copyBtn.addEventListener('click', () => UI.copyToClipboard(sql, copyBtn));
+                this.renderUploadStep();
+            },
 
-            if (pasteArea && analyzeBtn) {
-                pasteArea.disabled = true;
-                analyzeBtn.disabled = true;
-                analyzeBtn.textContent = 'Processing...';
-            }
-
-            const start = performance.now();
-            try {
-                UI.updateProgress(3, 3, 'Parsing XML data...');
+            renderUploadStep() {
                 this.updateMilestones(3);
-                const parsed = await Parser.run('parseCombined', text);
-                const end = performance.now();
-                this.state.parseTime = ((end - start) / 1000).toFixed(2);
-                
+                const card = UI.createStep(TEMPLATES.step3);
+                const drop = card.querySelector('#file-drop');
+                const input = card.querySelector('#file-input');
+                const pasteArea = card.querySelector('#xml-paste-area');
+                const analyzeBtn = card.querySelector('#analyze-paste-btn');
+
+                UI.updateFileDropzone(drop, 'initial');
+                this.setupFileHandler(drop, input, (file) => this.handleCombinedData(file));
+
+                pasteArea.addEventListener('input', () => {
+                    analyzeBtn.disabled = pasteArea.value.trim() === '';
+                });
+
+                analyzeBtn.addEventListener('click', () => {
+                    const pastedContent = pasteArea.value.trim();
+                    if (pastedContent) {
+                        this.handleCombinedData(pastedContent);
+                    } else {
+                        UI.renderError('Please paste XML content into the text area.');
+                    }
+                });
+            },
+
+            async handleCombinedData(data) {
+                UI.clearErrors();
+                const drop = document.querySelector('#file-drop');
+                const pasteArea = document.getElementById('xml-paste-area');
+                const analyzeBtn = document.getElementById('analyze-paste-btn');
+                const loadingOverlay = document.getElementById('loading-overlay');
+
+                let text;
+                let fileName = 'Pasted XML';
+                let isFile = data instanceof File;
+
                 if (isFile) {
-                    UI.updateFileDropzone(drop, 'success', fileName);
+                    if (data.size > 10 * 1024 * 1024) {
+                        UI.renderError('File too large. Please upload a file smaller than 10 MB.');
+                        return;
+                    }
+                    UI.updateFileDropzone(drop, 'loading');
+                    text = await data.text();
+                    fileName = data.name;
+                } else {
+                    text = data;
+                    drop.classList.remove('has-file');
                 }
 
-                this.state.masterFieldMap = parsed.masterFieldMap || new Map();
-                this.state.cards = parsed.cards || new Map();
-                this.state.buttons = parsed.buttons || new Map();
-                this.state.profileMapping = parsed.profileMapping || new Map();
-
-                UI.updateProgress(3, 3, 'Finalizing report data...');
-                this.finalizeData(parsed.dbData || new Map());
-
-                UI.updateProgress(3, 3, 'Analysis Complete');
-                const finalCard = UI.createStep(`<div class="p-6 text-center" style="color:var(--text-muted-color);">Analysis Completed.</div>`);
-                finalCard.classList.add('final-animation');
-                
-                setTimeout(() => {
-                    this.renderInitialReport();
-                    this.scrollToReport();
-                }, 300);
-                
-                const perfEl = document.getElementById('perf-metrics');
-                if (perfEl) perfEl.textContent = `Parsed and rendered in ${this.state.parseTime} seconds.`;
-            } catch (err) {
-                console.error(err);
-                UI.renderError(err.message || 'Parsing failed.');
-                if (isFile) {
-                    UI.updateFileDropzone(drop, 'initial');
-                }
-            } finally {
                 if (pasteArea && analyzeBtn) {
-                    pasteArea.disabled = false;
-                    analyzeBtn.disabled = false;
-                    analyzeBtn.textContent = 'Analyze XML';
+                    pasteArea.disabled = true;
+                    analyzeBtn.disabled = true;
+                    analyzeBtn.textContent = 'Processing...';
                 }
-            }
-        },
+                
+                loadingOverlay.classList.remove('opacity-0', 'pointer-events-none');
 
-        scrollToReport() {
-            const resultsContainer = document.querySelector('.table-container');
-            if (resultsContainer) {
-                resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        },
+                const start = performance.now();
+                try {
+                    this.updateMilestones(4);
+                    const parsed = await Parser.run('parseCombined', text);
+                    const end = performance.now();
+                    this.state.parseTime = ((end - start) / 1000).toFixed(2);
+                    
+                    if (isFile) {
+                        UI.updateFileDropzone(drop, 'success', fileName);
+                    }
 
-        finalizeData(dbData) {
-            this.state.masterFieldMap.forEach((field, key) => {
-                if (!field.lovs) field.lovs = { database: null, layout: null, dependency: null };
-                if (!field.dependencies) field.dependencies = [];
-                if (!field.dependencyContexts) field.dependencyContexts = [];
+                    this.state.masterFieldMap = parsed.masterFieldMap || new Map();
+                    this.state.cards = parsed.cards || new Map();
+                    this.state.buttons = parsed.buttons || new Map();
+                    this.state.profileMapping = parsed.profileMapping || new Map();
 
-                if (dbData && dbData.has(String(field.fieldId))) {
-                    field.dbInfo = dbData.get(String(field.fieldId));
-                    if (field.dbInfo && field.dbInfo.LOVS) {
-                        field.lovs.database = Array.isArray(field.dbInfo.LOVS) ? field.dbInfo.LOVS : String(field.dbInfo.LOVS).split(/,\s*/);
+                    this.finalizeData(parsed.dbData || new Map());
+
+                    const finalCard = UI.createStep(`<div class="p-6 text-center" style="color:var(--text-muted-color);">Analysis Completed.</div>`);
+                    finalCard.classList.add('final-animation');
+                    
+                    setTimeout(() => {
+                        this.renderInitialReport();
+                        this.scrollToReport();
+                    }, 300);
+                    
+                    const perfEl = document.getElementById('perf-metrics');
+                    if (perfEl) perfEl.textContent = `Parsed and rendered in ${this.state.parseTime} seconds.`;
+
+                } catch (err) {
+                    console.error(err);
+                    UI.renderError(err.message || 'Parsing failed.');
+                    if (isFile) {
+                        UI.updateFileDropzone(drop, 'initial');
+                    }
+                } finally {
+                    loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
+
+                    if (pasteArea && analyzeBtn) {
+                        pasteArea.disabled = false;
+                        analyzeBtn.disabled = false;
+                        analyzeBtn.textContent = 'Analyze Pasted XML';
                     }
                 }
-                if (field.visibilityOptions && !field.lovs.layout) {
-                    field.lovs.layout = Array.isArray(field.visibilityOptions) ? field.visibilityOptions : String(field.visibilityOptions).split(/,\s*/);
+            },
+
+            scrollToReport() {
+                const resultsContainer = document.querySelector('.table-container');
+                if (resultsContainer) {
+                    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
-                if (field.dependencies && field.dependencies.length > 0) {
-                    field.lovs.dependency = Array.from(new Set(field.dependencies.map(d => d.onValue)));
-                }
-            });
-            const childOriginalIds = new Set();
-            this.state.masterFieldMap.forEach(field => {
-                (field.dependencies || []).forEach(dep => {
-                    (dep.childFields || []).forEach(cid => {
-                        if (cid) childOriginalIds.add(cid);
+            },
+
+            finalizeData(dbData) {
+                this.state.masterFieldMap.forEach((field, key) => {
+                    if (!field.lovs) field.lovs = { database: null, layout: null, dependency: null };
+                    if (!field.dependencies) field.dependencies = [];
+                    if (!field.dependencyContexts) field.dependencyContexts = [];
+
+                    if (dbData && dbData.has(String(field.fieldId))) {
+                        field.dbInfo = dbData.get(String(field.fieldId));
+                        if (field.dbInfo && field.dbInfo.LOVS) {
+                            field.lovs.database = Array.isArray(field.dbInfo.LOVS) ? field.dbInfo.LOVS : String(field.dbInfo.LOVS).split(/,\s*/);
+                        }
+                    }
+                    if (field.visibilityOptions && !field.lovs.layout) {
+                        field.lovs.layout = Array.isArray(field.visibilityOptions) ? field.visibilityOptions : String(field.visibilityOptions).split(/,\s*/);
+                    }
+                    if (field.dependencies && field.dependencies.length > 0) {
+                        field.lovs.dependency = Array.from(new Set(field.dependencies.map(d => d.onValue)));
+                    }
+                });
+                const childOriginalIds = new Set();
+                this.state.masterFieldMap.forEach(field => {
+                    (field.dependencies || []).forEach(dep => {
+                        (dep.childFields || []).forEach(cid => {
+                            if (cid) childOriginalIds.add(cid);
+                        });
                     });
                 });
-            });
-            const finalData = [];
-            const processed = new Set();
-            const processField = (f, depth = 0) => {
-                if (!f) return;
-                const key = `${f.fieldId}-${f.layoutStateID}`;
-                if (processed.has(key)) return;
-                processed.add(key);
-                f.depth = depth;
-                f._isChild = childOriginalIds.has(f.originalId);
-                finalData.push(f);
-                (f.dependencies || []).forEach(dep => {
-                    const layoutContext = Array.from(new Set(f.dependencyContexts || [])).join(', ');
-                    (dep.childFields || []).forEach(childOriginalId => {
-                        let candidateFieldKey = null;
-                        if (String(childOriginalId).startsWith('cust_')) {
-                            const numeric = childOriginalId.replace('cust_', '');
-                            candidateFieldKey = `${numeric}-${f.layoutStateID}`;
-                        } else {
-                            candidateFieldKey = `${childOriginalId}-${f.layoutStateID}`;
-                        }
-                        if (this.state.masterFieldMap.has(candidateFieldKey)) {
-                            const child = this.state.masterFieldMap.get(candidateFieldKey);
-                            child.dependencyCondition = `On '${f.layoutLabel}' = '${dep.onValue}'${layoutContext ? ' (' + layoutContext + ')' : ''}`;
-                            processField(child, depth + 1);
-                        } else {
-                            for (const [k, entry] of this.state.masterFieldMap.entries()) {
-                                if (entry.originalId === childOriginalId || entry.originalId === ('cust_' + childOriginalId) || ('cust_' + entry.originalId) === childOriginalId) {
-                                    entry.dependencyCondition = `On '${f.layoutLabel}' = '${dep.onValue}'${layoutContext ? ' (' + layoutContext + ')' : ''}`;
-                                    processField(entry, depth + 1);
-                                    break;
+                const finalData = [];
+                const processed = new Set();
+                const processField = (f, depth = 0) => {
+                    if (!f) return;
+                    const key = `${f.fieldId}-${f.layoutStateID}`;
+                    if (processed.has(key)) return;
+                    processed.add(key);
+                    f.depth = depth;
+                    f._isChild = childOriginalIds.has(f.originalId);
+                    finalData.push(f);
+                    (f.dependencies || []).forEach(dep => {
+                        const layoutContext = Array.from(new Set(f.dependencyContexts || [])).join(', ');
+                        (dep.childFields || []).forEach(childOriginalId => {
+                            let candidateFieldKey = null;
+                            if (String(childOriginalId).startsWith('cust_')) {
+                                const numeric = childOriginalId.replace('cust_', '');
+                                candidateFieldKey = `${numeric}-${f.layoutStateID}`;
+                            } else {
+                                candidateFieldKey = `${childOriginalId}-${f.layoutStateID}`;
+                            }
+                            if (this.state.masterFieldMap.has(candidateFieldKey)) {
+                                const child = this.state.masterFieldMap.get(candidateFieldKey);
+                                child.dependencyCondition = `On '${f.layoutLabel}' = '${dep.onValue}'${layoutContext ? ' (' + layoutContext + ')' : ''}`;
+                                processField(child, depth + 1);
+                            } else {
+                                for (const [k, entry] of this.state.masterFieldMap.entries()) {
+                                    if (entry.originalId === childOriginalId || entry.originalId === ('cust_' + childOriginalId) || ('cust_' + entry.originalId) === childOriginalId) {
+                                        entry.dependencyCondition = `On '${f.layoutLabel}' = '${dep.onValue}'${layoutContext ? ' (' + layoutContext + ')' : ''}`;
+                                        processField(entry, depth + 1);
+                                        break;
+                                    }
                                 }
                             }
+                        });
+                    });
+                };
+                this.state.masterFieldMap.forEach(field => {
+                    processField(field, 0);
+                });
+                this.state.finalData = finalData;
+                this.state.filteredData = finalData.slice();
+            },
+
+            renderInitialReport() {
+                const card = UI.createStep(TEMPLATES.results);
+                this.renderDashboard(card.querySelector('#dashboard'));
+                this.renderFilters(card.querySelector('#filter-bar'));
+                card.querySelector('#download-csv-btn').addEventListener('click', () => Exporter.download('csv'));
+                card.querySelector('#download-excel-btn').addEventListener('click', () => Exporter.download('excel'));
+                UI.setupColumnVisibility();
+                UI.computePinnedOffset();
+                this.renderResults(this.state.filteredData, this.state.finalData);
+                setTimeout(() => UI.computePinnedOffset(), 250);
+            },
+
+            renderResults(data, allData) {
+                const tbody = document.getElementById('results-table-body');
+                const thead = document.querySelector('table > thead');
+                if (!tbody || !thead) { UI.renderError('Results table body/head not found'); return; }
+
+                tbody.innerHTML = '';
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="17" class="text-center py-10" style="color:var(--text-muted-color);">No fields to display.</td></tr>`;
+                    return;
+                }
+
+                const visibleColumns = UI.columns.filter(c => c.visible);
+
+                let headerRow1 = '';
+                let headerRow2 = '';
+                let currentGroup = null;
+
+                visibleColumns.forEach(col => {
+                    if (col.group) {
+                        if (col.group !== currentGroup) {
+                            currentGroup = col.group;
+                            const groupCols = visibleColumns.filter(c => c.group === currentGroup).length;
+                            headerRow1 += `<th colspan="${groupCols}" class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider">${col.group}</th>`;
                         }
+                        headerRow2 += `<th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider">${col.name}</th>`;
+                    } else {
+                        currentGroup = null;
+                        const pinnedClass = col.pinned ? `pinned-col pinned-col-${col.id}` : '';
+                        const minWidth = col.pinned ? `min-width:200px` : '';
+                        headerRow1 += `<th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${pinnedClass}" style="${minWidth}">${col.name}</th>`;
+                    }
+                });
+
+                thead.innerHTML = `
+                    <tr class="h-10">
+                        ${headerRow1}
+                    </tr>
+                    <tr class="h-10">
+                        ${headerRow2}
+                    </tr>
+                `;
+
+                const groups = {};
+                data.forEach(item => {
+                    const section = item.section || 'Uncategorized';
+                    const key = `${section}:::${item.layoutStateID || '-'}`;
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(item);
+                });
+                Object.keys(groups).sort().forEach(groupKey => {
+                    const [section, stateId] = groupKey.split(':::');
+                    const sectionKeySafe = `${section}-${stateId}`.replace(/\s+/g, '-');
+                    const header = document.createElement('tr');
+                    header.className = 'section-header';
+                    header.id = `section-header-${sectionKeySafe}`;
+                    header.innerHTML = `<th colspan="${visibleColumns.length}" class="px-4 py-2 text-left text-sm font-bold bg-primary-50 dark:bg-primary-950">${UI.escapeHtml(section)} (State ID: ${UI.escapeHtml(stateId)})</th>`;
+                    tbody.appendChild(header);
+                    groups[groupKey].forEach(item => {
+                        const row = document.createElement('tr');
+                        row.className = 'results-table-body-row';
+                        const NA = { isRequired: '-', isReadOnly: '-', isHidden: '-' };
+                        const newEdit = item.layouts.newEdit || NA;
+                        const detail = item.layouts.detail;
+                        const history = item.layouts.history;
+                        const db = item.dbInfo || {};
+                        let defaultValues = [];
+                        if (item.layoutDefaultValue) defaultValues.push(`Layout: ${item.layoutDefaultValue}`);
+                        if (db.DefaultValue) defaultValues.push(`Field: ${db.DefaultValue}`);
+                        const combinedDefaultValue = defaultValues.length > 0 ? defaultValues.join(', ') : '-';
+                        let combinedLovs = '-';
+                        if (item.lovs && item.lovs.layout && item.lovs.layout.length > 0) combinedLovs = item.lovs.layout.join(' | ');
+                        else if (item.lovs && item.lovs.database && item.lovs.database.length > 0) combinedLovs = item.lovs.database.join(' | ');
+                        const detailStatus = detail ? (detail.isHidden === 'Yes' ? 'H' : 'D') : 'N/A';
+                        const historyStatus = history ? (history.isHidden === 'Yes' ? 'H' : 'D') : 'N/A';
+                        const type = String(item.originalId || '').startsWith('cust_') ? 'Custom' : 'System';
+
+                        const dataMap = {
+                            layoutLabel: item.layoutLabel,
+                            dbLabel: db.Label || '-',
+                            type: type,
+                            fieldId: item.fieldId,
+                            layoutStateID: item.layoutStateID || '-',
+                            layoutStateName: item.layoutStateName || '-',
+                            dataType: db.FieldType || 'N/A',
+                            defaultValue: combinedDefaultValue,
+                            length: db.Length || '-',
+                            columnName: db.ColumnName || 'N/A',
+                            newEditRequired: newEdit.isRequired,
+                            newEditRO: newEdit.isReadOnly,
+                            newEditHidden: newEdit.isHidden,
+                            detailStatus: detailStatus,
+                            historyStatus: historyStatus,
+                            lovs: combinedLovs,
+                            dependencyCondition: item.dependencyCondition || (item._isChild ? 'Child field (orphaned/parent in another state?)' : 'None')
+                        };
+
+                        row.innerHTML = visibleColumns.map(col => {
+                            const val = dataMap[col.id];
+                            let cellContent = UI.escapeHtml(val);
+                            if (col.id === 'layoutLabel' || col.id === 'dbLabel') {
+                                const tooltipText = `ID: ${item.fieldId}, State: ${item.layoutStateID}, Section: ${item.section}`;
+                                cellContent = `<span class="tooltip">${cellContent}<span class="tooltiptext">${tooltipText}</span></span>`;
+                            }
+                            const pinnedClass = col.pinned ? `pinned-col pinned-col-${col.id}` : '';
+                            const paddingLeft = col.id === 'layoutLabel' ? (item.depth > 0 ? (0.75 + (item.depth * 1.5)) : 0.75) : 1;
+                            const dependencyClass = item.depth > 0 && col.id === 'layoutLabel' ? 'dependency-child' : '';
+                            return `<td class="px-4 py-3 text-sm ${pinnedClass} ${dependencyClass} " style="padding-left:${paddingLeft}rem">${cellContent}</td>`;
+                        }).join('');
+
+                        tbody.appendChild(row);
                     });
                 });
-            };
-            this.state.masterFieldMap.forEach(field => {
-                processField(field, 0);
-            });
-            this.state.finalData = finalData;
-            this.state.filteredData = finalData.slice();
-        },
+                setTimeout(() => UI.computePinnedOffset(), 50);
+            },
 
-        renderInitialReport() {
-            const card = UI.createStep(TEMPLATES.results);
-            this.renderDashboard(card.querySelector('#dashboard'));
-            this.renderFilters(card.querySelector('#filter-bar'));
-            card.querySelector('#download-csv-btn').addEventListener('click', () => Exporter.download('csv'));
-            card.querySelector('#download-excel-btn').addEventListener('click', () => Exporter.download('excel'));
-            UI.setupColumnVisibility();
-            UI.computePinnedOffset();
-            this.renderResults(this.state.filteredData, this.state.finalData);
-            setTimeout(() => UI.computePinnedOffset(), 250);
-        },
-
-        renderResults(data, allData) {
-            const tbody = document.getElementById('results-table-body');
-            const thead = document.querySelector('table > thead');
-            if (!tbody || !thead) { UI.renderError('Results table body/head not found'); return; }
-
-            tbody.innerHTML = '';
-            if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="17" class="text-center py-10 text-gray-500" style="color:var(--text-muted-color);">No fields to display.</td></tr>`;
-                return;
-            }
-
-            const visibleColumns = UI.columns.filter(c => c.visible);
-
-            let headerRow1 = '';
-            let headerRow2 = '';
-            let currentGroup = null;
-
-            visibleColumns.forEach(col => {
-                if (col.group) {
-                    if (col.group !== currentGroup) {
-                        currentGroup = col.group;
-                        const groupCols = visibleColumns.filter(c => c.group === currentGroup).length;
-                        headerRow1 += `<th colspan="${groupCols}" class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider">${col.group}</th>`;
+            renderDashboard(container) {
+                const state = this.state;
+                const sections = {};
+                const fieldTypes = { custom: 0, system: 0 };
+                state.finalData.forEach(it => {
+                    const s = it.section || 'Uncategorized';
+                    sections[s] = (sections[s] || 0) + 1;
+                    if (String(it.originalId || '').startsWith('cust_')) {
+                        fieldTypes.custom++;
+                    } else {
+                        fieldTypes.system++;
                     }
-                    headerRow2 += `<th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider">${col.name}</th>`;
-                } else {
-                    currentGroup = null;
-                    const pinnedClass = col.pinned ? `pinned-col pinned-col-${col.id}` : '';
-                    const minWidth = col.pinned ? `min-width:200px` : '';
-                    headerRow1 += `<th rowspan="2" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${pinnedClass}" style="${minWidth}">${col.name}</th>`;
-                }
-            });
+                });
+                const entries = Object.entries(sections).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                const statsHtml = `
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div class="p-4 rounded-xl" style="background-color:var(--card-background); border:1px solid var(--border-color);">
+            <div class="text-3xl font-bold" style="background: linear-gradient(to right, var(--primary-start), var(--primary-end)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${state.finalData.length}</div>
+            <div class="text-sm mt-1" style="color:var(--text-color);">Total Fields</div>
+          </div>
+          <div class="p-4 rounded-xl" style="background-color:var(--card-background); border:1px solid var(--border-color);">
+            <div class="text-3xl font-bold" style="background: linear-gradient(to right, var(--primary-start), var(--primary-end)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${fieldTypes.custom}</div>
+            <div class="text-sm mt-1" style="color:var(--text-color);">Custom Fields</div>
+          </div>
+          <div class="p-4 rounded-xl" style="background-color:var(--card-background); border:1px solid var(--border-color);">
+            <div class="text-3xl font-bold" style="background: linear-gradient(to right, var(--primary-start), var(--primary-end)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${state.buttons.size}</div>
+            <div class="text-sm mt-1" style="color:var(--text-color);">Custom Buttons</div>
+          </div>
+          <div class="p-4 rounded-xl" style="background-color:var(--card-background); border:1px solid var(--border-color);">
+            <div class="text-3xl font-bold" style="background: linear-gradient(to right, var(--primary-start), var(--primary-end)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${state.cards.size}</div>
+            <div class="text-sm mt-1" style="color:var(--text-color);">UI Cards</div>
+          </div>
+        </div>
+      `;
+                const chartHtml = entries.map(([name, count]) => {
+                    return `<a href="#" class="section-jump btn flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors" data-section-key="${encodeURIComponent(name)}">
+                  <div class="w-1/3 truncate text-sm font-medium" style="color:var(--text-muted-color);">${UI.escapeHtml(name)}</div>
+                  <div class="w-2/3 bg-gray-200 dark:bg-slate-700 rounded-full h-4">
+                    <div class="h-4 rounded-full chart-bar" style="width:${Math.round((count / Math.max(...entries.map(e => e[1]), 1)) * 100)}%;"></div>
+                  </div>
+                  <div class="ml-2 text-sm" style="color:var(--text-muted-color);">${count}</div>
+                </a>`;
+                }).join('');
+                container.innerHTML = `<div>${statsHtml}<div><h3 class="font-semibold mb-2 text-lg" style="color:var(--primary-start);">Top Sections</h3><div id="section-chart" class="space-y-2">${chartHtml}</div></div></div>`;
+                container.querySelectorAll('.section-jump').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const name = decodeURIComponent(link.dataset.sectionKey);
+                        const headers = document.querySelectorAll('[id^="section-header-"]');
+                        for (const h of headers) {
+                            if (h.textContent.trim().startsWith(name)) {
+                                h.scrollIntoView({
+                                    behavior: 'smooth',
+                                    block: 'center'
+                                });
+                                return;
+                            }
+                        }
+                        UI.renderError('Section header not found for: ' + name);
+                    });
+                });
+            },
 
-            thead.innerHTML = `
-                <tr class="h-10">
-                    ${headerRow1}
-                </tr>
-                <tr class="h-10">
-                    ${headerRow2}
-                </tr>
-            `;
+            renderFilters(container) {
+                const data = this.state.finalData;
+                container.innerHTML = '';
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex flex-wrap items-center gap-4';
+                const createFilter = (id, placeholder, options) => {
+                    const sel = document.createElement('select');
+                    sel.id = id;
+                    sel.className = 'p-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary-500';
+                    sel.style.backgroundColor = 'var(--card-background)';
+                    sel.style.color = 'var(--text-color)';
+                    sel.style.borderColor = 'var(--border-color)';
+                    options.forEach(o => {
+                        const opt = document.createElement('option');
+                        opt.value = o.value;
+                        opt.textContent = o.text;
+                        sel.appendChild(opt);
+                    });
+                    return sel;
+                };
+                const search = document.createElement('input');
+                search.type = 'search';
+                search.id = 'filter-search';
+                search.placeholder = 'Search field or label...';
+                search.className = 'p-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary-500';
+                search.style.backgroundColor = 'var(--card-background)';
+                search.style.color = 'var(--text-color)';
+                search.style.borderColor = 'var(--border-color)';
+                wrapper.appendChild(search);
+                const sections = Array.from(new Set(data.map(d => d.section))).filter(Boolean).sort();
+                wrapper.appendChild(createFilter('filter-section', 'All Sections', [{
+                    value: '',
+                    text: 'All Sections'
+                }, ...sections.map(s => ({
+                    value: s,
+                    text: s
+                }))]));
+                wrapper.appendChild(createFilter('filter-type', 'All Types', [{
+                    value: '',
+                    text: 'All Types'
+                }, {
+                    value: 'custom',
+                    text: 'Custom'
+                }, {
+                    value: 'system',
+                    text: 'System'
+                }]));
+                wrapper.appendChild(createFilter('filter-mandatory', 'All Requirements', [{
+                    value: '',
+                    text: 'All Requirements'
+                }, {
+                    value: 'yes',
+                    text: 'Mandatory Only'
+                }]));
 
-            const groups = {};
-            data.forEach(item => {
-                const section = item.section || 'Uncategorized';
-                const key = `${section}:::${item.layoutStateID || '-'}`;
-                if (!groups[key]) groups[key] = [];
-                groups[key].push(item);
-            });
-            Object.keys(groups).sort().forEach(groupKey => {
-                const [section, stateId] = groupKey.split(':::');
-                const sectionKeySafe = `${section}-${stateId}`.replace(/\s+/g, '-');
-                const header = document.createElement('tr');
-                header.className = 'section-header';
-                header.id = `section-header-${sectionKeySafe}`;
-                header.innerHTML = `<th colspan="${visibleColumns.length}" class="px-4 py-2 text-left text-sm font-bold bg-primary-50 dark:bg-primary-950">${UI.escapeHtml(section)} (State ID: ${UI.escapeHtml(stateId)})</th>`;
-                tbody.appendChild(header);
-                groups[groupKey].forEach(item => {
-                    const row = document.createElement('tr');
-                    row.className = 'hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors';
-                    const NA = { isRequired: '-', isReadOnly: '-', isHidden: '-' };
-                    const newEdit = item.layouts.newEdit || NA;
+                const clearBtn = document.createElement('button');
+                clearBtn.id = 'clear-filters-btn';
+                clearBtn.textContent = 'Clear Filters';
+                clearBtn.className = 'btn p-3 rounded-lg border transition-colors';
+                clearBtn.style.backgroundColor = 'var(--card-background)';
+                clearBtn.style.color = 'var(--text-color)';
+                clearBtn.style.borderColor = 'var(--border-color)';
+                wrapper.appendChild(clearBtn);
+
+                container.appendChild(wrapper);
+                const apply = () => this.handleFilterChange();
+                search.addEventListener('input', apply);
+                container.querySelectorAll('select').forEach(sel => sel.addEventListener('change', apply));
+                clearBtn.addEventListener('click', () => {
+                    search.value = '';
+                    container.querySelectorAll('select').forEach(sel => sel.value = '');
+                    apply();
+                });
+            },
+
+            handleFilterChange() {
+                const search = (document.getElementById('filter-search')?.value || '').toLowerCase();
+                const section = document.getElementById('filter-section')?.value || '';
+                const type = document.getElementById('filter-type')?.value || '';
+                const mandatory = document.getElementById('filter-mandatory')?.value || '';
+                this.state.filteredData = this.state.finalData.filter(item => {
+                    const searchMatch = !search || (item.layoutLabel || '').toLowerCase().includes(search) || ((item.dbInfo?.Label || '').toLowerCase().includes(search));
+                    const sectionMatch = !section || (item.section === section);
+                    const typeMatch = !type || (type === 'custom' ? String(item.originalId || '').startsWith('cust_') : !String(item.originalId || '').startsWith('cust_'));
+                    const mandatoryMatch = !mandatory || (item.layouts?.newEdit?.isRequired === 'Yes');
+                    return searchMatch && sectionMatch && typeMatch && mandatoryMatch;
+                });
+                this.renderResults(this.state.filteredData, this.state.finalData);
+            },
+
+            setupFileHandler(drop, input, callback) {
+                drop.addEventListener('click', () => input.click());
+                input.addEventListener('change', e => {
+                    if (e.target.files[0]) callback(e.target.files[0]);
+                });
+                drop.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    drop.classList.add('dragover');
+                });
+                drop.addEventListener('dragleave', e => {
+                    e.preventDefault();
+                    drop.classList.remove('dragover');
+                });
+                drop.addEventListener('drop', e => {
+                    e.preventDefault();
+                    drop.classList.remove('dragover');
+                    if (e.dataTransfer.files[0]) callback(e.dataTransfer.files[0]);
+                });
+            }
+        };
+
+        /***** Parser - synchronous but defensive *****/
+        const Parser = {
+            run(task, xml) {
+                return new Promise((resolve, reject) => {
+                    try {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(xml, 'application/xml');
+                        if (doc.querySelector('parsererror')) throw new Error('XML parse error. Ensure you saved the DB cell content exactly as XML.');
+                        if (task === 'parseCombined') {
+                            const finalOutput = doc.querySelector('FinalOutput');
+                            if (!finalOutput) throw new Error('Missing <FinalOutput> root in XML.');
+                            const layoutsNode = finalOutput.querySelector('Layouts');
+                            const cardsNode = finalOutput.querySelector('Cards');
+                            const fieldsNode = finalOutput.querySelector('Fields');
+                            if (!layoutsNode) throw new Error('Missing <Layouts> inside <FinalOutput>.');
+                            const cardMap = cardsNode ? this._parseCardXml(cardsNode) : new Map();
+                            const dbMap = fieldsNode ? this._parseDbXml(fieldsNode) : new Map();
+                            const layoutResult = this._parseLayouts(layoutsNode, cardMap);
+                            resolve({
+                                masterFieldMap: layoutResult.masterFieldMap,
+                                profileMapping: layoutResult.profileMapping,
+                                cards: layoutResult.cards,
+                                buttons: layoutResult.buttons,
+                                dbData: dbMap
+                            });
+                            return;
+                        }
+                        reject(new Error('Unknown parser task: ' + task));
+                    } catch (err) {
+                        reject(err);
+                    }
+                });
+            },
+            _parseCardXml(cardsNode) {
+                const map = new Map();
+                cardsNode.querySelectorAll('Card').forEach(c => {
+                    const cardId = c.getAttribute('CardID') || c.getAttribute('CardId') || c.getAttribute('cardid');
+                    const xml = c.querySelector('CardXML')?.textContent;
+                    if (cardId && xml) map.set(cardId, xml);
+                });
+                return map;
+            },
+            _parseDbXml(fieldsNode) {
+                const map = new Map();
+                fieldsNode.querySelectorAll('Field').forEach(fn => {
+                    const id = fn.querySelector('FIELDID')?.textContent?.trim();
+                    if (!id) return;
+                    const label = fn.querySelector('LABEL')?.textContent || fn.querySelector('Label')?.textContent || null;
+                    const ftype = fn.querySelector('FieldType')?.textContent || fn.querySelector('Fieldtype')?.textContent || null;
+                    const length = fn.querySelector('LENGTH')?.textContent || null;
+                    const def = fn.querySelector('DEFAULTVALUE')?.textContent || null;
+                    const tname = fn.querySelector('TABLENAME')?.textContent || null;
+                    const fname = fn.querySelector('FIELDNAME')?.textContent || null;
+                    const lovsText = fn.querySelector('LOVS')?.textContent?.trim() || null;
+                    const lovs = lovsText ? lovsText.split(/,\s*/) : null;
+                    map.set(id, {
+                        FieldID: id,
+                        Label: label,
+                        FieldType: ftype,
+                        Length: length,
+                        DefaultValue: def,
+                        TableName: tname,
+                        FieldName: fname,
+                        ColumnName: (tname && fname) ? `${tname}.${fname}` : ((tname || fname) ? `${tname || ''}${fname || ''}` : 'N/A'),
+                        LOVS: lovs
+                    });
+                });
+                return map;
+            },
+            _parseLayouts(layoutsNode, cardMap) {
+                const masterFieldMap = new Map();
+                const profileMapping = new Map();
+                const cards = new Map();
+                const buttons = new Map();
+                const groupDefs = [{
+                    group: 'NewEditLayoutsGroup',
+                    type: 'newEdit'
+                }, {
+                    group: 'DetailLayoutsGroup',
+                    type: 'detail'
+                }, {
+                    group: 'HistoryLayoutsGroup',
+                    type: 'history'
+                }];
+                groupDefs.forEach(g => {
+                    layoutsNode.querySelectorAll(`${g.group} > *`).forEach(layoutWrapper => {
+                        const stateID = layoutWrapper.getAttribute('StateID') || layoutWrapper.querySelector('Layout')?.getAttribute('StateID') || layoutWrapper.getAttribute('stateid') || '';
+                        layoutWrapper.querySelectorAll('Layout > LayoutXML').forEach(layoutXMLNode => {
+                            const encoded = layoutXMLNode.textContent;
+                            if (!encoded) return;
+                            const innerDoc = new DOMParser().parseFromString(encoded, 'application/xml');
+                            if (innerDoc.querySelector('parsererror')) return;
+                            const layoutName = innerDoc.documentElement.getAttribute('layoutname') || innerDoc.documentElement.getAttribute('name') || 'Unknown Layout';
+                            const groupId = innerDoc.documentElement.getAttribute('groupid') || null;
+                            const stateName = layoutWrapper.getAttribute('StateName') || '';
+                            if (groupId) {
+                                const profileName = layoutName.split(':').pop().trim();
+                                if (profileName) profileMapping.set(groupId, {
+                                    Profile: profileName,
+                                    Type: g.type,
+                                    GroupID: groupId
+                                });
+                            }
+                            innerDoc.querySelectorAll('control').forEach(ctrl => {
+                                const prop = ctrl.querySelector('property[name="CardName"]') || ctrl.querySelector('property[name=\'CardName\']');
+                                const cardName = prop?.getAttribute('value') || null;
+                                if (cardName) {
+                                    cards.set(`${layoutName}-${cardName}-${stateID}`, {
+                                        Name: cardName,
+                                        Layout: layoutName,
+                                        StateID: stateID,
+                                        StateName: stateName
+                                    });
+                                }
+                            });
+                            innerDoc.querySelectorAll('button[iscustom="1"], button[isCustom="1"], button[iscustom="true"]').forEach(btn => {
+                                const id = btn.getAttribute('id') || btn.getAttribute('ID') || (btn.getAttribute('caption') || 'btn_' + Math.random().toString(36).slice(2));
+                                buttons.set(id, {
+                                    ID: id,
+                                    Caption: btn.getAttribute('caption') || btn.getAttribute('Caption') || '',
+                                    Layout: layoutName,
+                                    StateID: stateID,
+                                    StateName: stateName
+                                });
+                            });
+                            innerDoc.querySelectorAll('section').forEach(section => {
+                                const sectionName = section.querySelector('text > lang')?.getAttribute('text') || section.querySelector('title')?.textContent || 'Unnamed Section';
+                                this._extractFieldsFromSection(section, sectionName, g.type, stateID, stateName, masterFieldMap);
+                            });
+                            if (g.type === 'detail') {
+                                innerDoc.querySelectorAll('control').forEach(ctrl => {
+                                    const nameAttr = ctrl.getAttribute('name') || '';
+                                    const typeAttr = ctrl.getAttribute('type') || '';
+                                    if (nameAttr.toLowerCase() === 'cardview') {
+                                        const controlId = ctrl.getAttribute('controlid') || ctrl.getAttribute('ControlID') || null;
+                                        if (controlId && cardMap.has(controlId)) {
+                                            try {
+                                                const cardXml = cardMap.get(controlId);
+                                                const cardDoc = new DOMParser().parseFromString(cardXml, 'application/xml');
+                                                const cardLayoutNode = cardDoc.querySelector('cardlayout > layout') || cardDoc.querySelector('layout');
+                                                if (cardLayoutNode) {
+                                                    cardLayoutNode.querySelectorAll('section').forEach(cs => {
+                                                        const cardSectionName = cs.querySelector('text > lang')?.getAttribute('text') || 'Card Section';
+                                                        const fullSectionName = `Card: ${controlId} - ${cardSectionName}`;
+                                                        this._extractFieldsFromSection(cs, fullSectionName, g.type, stateID, stateName, masterFieldMap);
+                                                    });
+                                                }
+                                            } catch (e) { }
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    });
+                });
+                return {
+                    masterFieldMap,
+                    profileMapping,
+                    cards,
+                    buttons
+                };
+            },
+            _extractFieldsFromSection(sectionNode, sectionName, layoutType, stateID, stateName, masterFieldMap) {
+                sectionNode.querySelectorAll('col').forEach(col => {
+                    try {
+                        const origId = col.getAttribute('fieldid') || col.getAttribute('FieldId') || col.getAttribute('fieldid') || null;
+                        if (!origId || origId === 'blankcell') return;
+                        const fieldId = String(origId).startsWith('cust_') ? String(origId).replace('cust_', '') : String(origId);
+                        const key = `${fieldId}-${stateID}`;
+                        if (!masterFieldMap.has(key)) {
+                            masterFieldMap.set(key, {
+                                fieldId: fieldId,
+                                originalId: origId,
+                                layoutLabel: col.querySelector('text > lang')?.getAttribute('text') || col.getAttribute('name') || col.getAttribute('caption') || '',
+                                section: sectionName,
+                                layouts: {},
+                                dependencies: [],
+                                dependencyContexts: [],
+                                visibilityOptions: null,
+                                dbInfo: null,
+                                layoutDefaultValue: col.getAttribute('defvalue') || col.getAttribute('default') || null,
+                                lovs: {
+                                    database: null,
+                                    layout: null,
+                                    dependency: null
+                                },
+                                dependencyCondition: null,
+                                layoutStateID: stateID,
+                                layoutStateName: stateName
+                            });
+                        }
+                        const rec = masterFieldMap.get(key);
+                        rec.layoutLabel = col.querySelector('text > lang')?.getAttribute('text') || col.getAttribute('name') || rec.layoutLabel;
+                        rec.layoutDefaultValue = col.getAttribute('defvalue') || rec.layoutDefaultValue;
+                        const req = col.getAttribute('req');
+                        const readonly = col.getAttribute('readonly');
+                        let isReadOnlyText = 'No';
+                        if (readonly === '1') {
+                            const readonlyType = col.getAttribute('readonlytype');
+                            isReadOnlyText = (readonlyType === '4') ? 'Yes (Once Defined)' : 'Yes';
+                        }
+                        rec.layouts[layoutType] = {
+                            isRequired: (req === '1' || req === '2') ? 'Yes' : 'No',
+                            isReadOnly: isReadOnlyText,
+                            isHidden: col.getAttribute('hide') === '1' ? 'Yes' : 'No'
+                        };
+                        const visNode = col.querySelector('visibility > visibilityoption');
+                        if (visNode) {
+                            const displaynames = visNode.getAttribute('displaynames') || visNode.getAttribute('displayname') || visNode.textContent || '';
+                            rec.visibilityOptions = displaynames ? String(displaynames).split(/,\s*/) : [];
+                        }
+                        const depNode = col.querySelector('dependents');
+                        if (depNode) {
+                            if (!rec.dependencyContexts.includes(layoutType)) rec.dependencyContexts.push(layoutType);
+                            depNode.querySelectorAll('option').forEach(opt => {
+                                const onValue = opt.getAttribute('name') || opt.getAttribute('value') || opt.textContent || '';
+                                const childFields = Array.from(opt.querySelectorAll('dependent')).map(d => d.getAttribute('id')).filter(Boolean);
+                                const existingDep = rec.dependencies.find(d => d.onValue === onValue);
+                                if (existingDep) {
+                                    existingDep.childFields.push(...childFields);
+                                    existingDep.childFields = Array.from(new Set(existingDep.childFields));
+                                } else {
+                                    rec.dependencies.push({
+                                        onValue,
+                                        childFields
+                                    });
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.warn('Error extracting field in section', e);
+                    }
+                });
+            }
+        };
+
+        /***** Exporter *****/
+        const Exporter = {
+            download(type) {
+                const data = App.state.filteredData || App.state.finalData;
+                if (type === 'csv') this._downloadCsv(data);
+                else if (type === 'excel') this._downloadExcel(App.state);
+            },
+            _flattenData(data) {
+                return data.map(item => {
+                    const na = {
+                        isRequired: 'N/A',
+                        isReadOnly: 'N/A',
+                        isHidden: 'N/A'
+                    };
+                    const newEdit = item.layouts.newEdit || na;
                     const detail = item.layouts.detail;
                     const history = item.layouts.history;
                     const db = item.dbInfo || {};
@@ -933,611 +1519,163 @@
                     let combinedLovs = '-';
                     if (item.lovs && item.lovs.layout && item.lovs.layout.length > 0) combinedLovs = item.lovs.layout.join(' | ');
                     else if (item.lovs && item.lovs.database && item.lovs.database.length > 0) combinedLovs = item.lovs.database.join(' | ');
-                    const detailStatus = detail ? (detail.isHidden === 'Yes' ? 'H' : 'D') : 'N/A';
-                    const historyStatus = history ? (history.isHidden === 'Yes' ? 'H' : 'D') : 'N/A';
                     const type = String(item.originalId || '').startsWith('cust_') ? 'Custom' : 'System';
 
-                    const dataMap = {
-                        layoutLabel: item.layoutLabel,
-                        dbLabel: db.Label || '-',
-                        type: type,
-                        fieldId: item.fieldId,
-                        layoutStateID: item.layoutStateID || '-',
-                        layoutStateName: item.layoutStateName || '-',
-                        dataType: db.FieldType || 'N/A',
-                        defaultValue: combinedDefaultValue,
-                        length: db.Length || '-',
-                        columnName: db.ColumnName || 'N/A',
-                        newEditRequired: newEdit.isRequired,
-                        newEditRO: newEdit.isReadOnly,
-                        newEditHidden: newEdit.isHidden,
-                        detailStatus: detailStatus,
-                        historyStatus: historyStatus,
-                        lovs: combinedLovs,
-                        dependencyCondition: item.dependencyCondition || (item._isChild ? 'Child field (orphaned/parent in another state?)' : 'None')
+                    return {
+                        'Layout Label': item.layoutLabel,
+                        'DB Field Label': db.Label || '-',
+                        'Type': type,
+                        'Field ID': item.fieldId,
+                        'Layout State ID': item.layoutStateID || '-',
+                        'Layout State Name': item.layoutStateName || '-',
+                        'Data Type': db.FieldType || 'N/A',
+                        'Default Value': combinedDefaultValue,
+                        'Length': db.Length || '-',
+                        'Column Name': db.ColumnName || 'N/A',
+                        'New/Edit - Required': newEdit.isRequired,
+                        'New/Edit - ReadOnly': newEdit.isReadOnly,
+                        'New/Edit - Hidden': newEdit.isHidden,
+                        'Detail Status': detail ? (detail.isHidden === 'Yes' ? 'H' : 'D') : 'N/A',
+                        'History Status': history ? (history.isHidden === 'Yes' ? 'H' : 'D') : 'N/A',
+                        'LOVs': combinedLovs,
+                        'Dependency Condition': item.dependencyCondition || (item._isChild ? 'Child field (orphaned/parent in another state?)' : 'None')
                     };
-
-                    row.innerHTML = visibleColumns.map(col => {
-                        const val = dataMap[col.id];
-                        let cellContent = UI.escapeHtml(val);
-                        if (col.id === 'layoutLabel' || col.id === 'dbLabel') {
-                            const tooltipText = `ID: ${item.fieldId}, State: ${item.layoutStateID}, Section: ${item.section}`;
-                            cellContent = `<span class="tooltip">${cellContent}<span class="tooltiptext">${tooltipText}</span></span>`;
-                        }
-                        const pinnedClass = col.pinned ? `pinned-col pinned-col-${col.id}` : '';
-                        const paddingLeft = col.id === 'layoutLabel' ? (item.depth > 0 ? (0.75 + (item.depth * 1.5)) : 0.75) : 1;
-                        const dependencyClass = item.depth > 0 && col.id === 'layoutLabel' ? 'dependency-child' : '';
-                        return `<td class="px-4 py-3 text-sm ${pinnedClass} ${dependencyClass} " style="padding-left:${paddingLeft}rem">${cellContent}</td>`;
-                    }).join('');
-
-                    tbody.appendChild(row);
                 });
-            });
-            setTimeout(() => UI.computePinnedOffset(), 50);
-        },
-
-        renderDashboard(container) {
-            const state = this.state;
-            const sections = {};
-            const fieldTypes = { custom: 0, system: 0 };
-            state.finalData.forEach(it => {
-                const s = it.section || 'Uncategorized';
-                sections[s] = (sections[s] || 0) + 1;
-                if (String(it.originalId || '').startsWith('cust_')) {
-                    fieldTypes.custom++;
-                } else {
-                    fieldTypes.system++;
+            },
+            _downloadCsv(data) {
+                const flat = this._flattenData(data || []);
+                if (flat.length === 0) {
+                    UI.renderError('No data to export.');
+                    return;
                 }
-            });
-            const entries = Object.entries(sections).sort((a, b) => b[1] - a[1]).slice(0, 5);
-            const statsHtml = `
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-          <div class="p-4 rounded-xl bg-gray-100 dark:bg-slate-800 text-center shadow-sm">
-            <div class="text-3xl font-bold" style="background: linear-gradient(to right, var(--primary-start), var(--primary-end)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${state.finalData.length}</div>
-            <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Total Fields</div>
-          </div>
-          <div class="p-4 rounded-xl bg-gray-100 dark:bg-slate-800 text-center shadow-sm">
-            <div class="text-3xl font-bold" style="background: linear-gradient(to right, var(--primary-start), var(--primary-end)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${fieldTypes.custom}</div>
-            <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Custom Fields</div>
-          </div>
-          <div class="p-4 rounded-xl bg-gray-100 dark:bg-slate-800 text-center shadow-sm">
-            <div class="text-3xl font-bold" style="background: linear-gradient(to right, var(--primary-start), var(--primary-end)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${state.buttons.size}</div>
-            <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Custom Buttons</div>
-          </div>
-          <div class="p-4 rounded-xl bg-gray-100 dark:bg-slate-800 text-center shadow-sm">
-            <div class="text-3xl font-bold" style="background: linear-gradient(to right, var(--primary-start), var(--primary-end)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${state.cards.size}</div>
-            <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">UI Cards</div>
-          </div>
-        </div>
-      `;
-            const chartHtml = entries.map(([name, count]) => {
-                return `<a href="#" class="section-jump btn flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors" data-section-key="${encodeURIComponent(name)}">
-                  <div class="w-1/3 truncate text-sm font-medium" style="color:var(--text-muted-color);">${UI.escapeHtml(name)}</div>
-                  <div class="w-2/3 bg-gray-200 dark:bg-slate-700 rounded-full h-4">
-                    <div class="h-4 rounded-full chart-bar" style="width:${Math.round((count / Math.max(...entries.map(e => e[1]), 1)) * 100)}%;"></div>
-                  </div>
-                  <div class="ml-2 text-sm" style="color:var(--text-muted-color);">${count}</div>
-                </a>`;
-            }).join('');
-            container.innerHTML = `<div>${statsHtml}<div><h3 class="font-semibold mb-2 text-lg" style="color:var(--primary-start);">Top Sections</h3><div id="section-chart" class="space-y-2">${chartHtml}</div></div></div>`;
-            container.querySelectorAll('.section-jump').forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const name = decodeURIComponent(link.dataset.sectionKey);
-                    const headers = document.querySelectorAll('[id^="section-header-"]');
-                    for (const h of headers) {
-                        if (h.textContent.trim().startsWith(name)) {
-                            h.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'center'
-                            });
-                            return;
-                        }
-                    }
-                    UI.renderError('Section header not found for: ' + name);
-                });
-            });
-        },
-
-        renderFilters(container) {
-            const data = this.state.finalData;
-            container.innerHTML = '';
-            const wrapper = document.createElement('div');
-            wrapper.className = 'flex flex-wrap items-center gap-4';
-            const createFilter = (id, placeholder, options) => {
-                const sel = document.createElement('select');
-                sel.id = id;
-                sel.className = 'p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary-500';
-                options.forEach(o => {
-                    const opt = document.createElement('option');
-                    opt.value = o.value;
-                    opt.textContent = o.text;
-                    sel.appendChild(opt);
-                });
-                return sel;
-            };
-            const search = document.createElement('input');
-            search.type = 'search';
-            search.id = 'filter-search';
-            search.placeholder = 'Search field or label...';
-            search.className = 'p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary-500';
-            wrapper.appendChild(search);
-            const sections = Array.from(new Set(data.map(d => d.section))).filter(Boolean).sort();
-            wrapper.appendChild(createFilter('filter-section', 'All Sections', [{
-                value: '',
-                text: 'All Sections'
-            }, ...sections.map(s => ({
-                value: s,
-                text: s
-            }))]));
-            wrapper.appendChild(createFilter('filter-type', 'All Types', [{
-                value: '',
-                text: 'All Types'
-            }, {
-                value: 'custom',
-                text: 'Custom'
-            }, {
-                value: 'system',
-                text: 'System'
-            }]));
-            wrapper.appendChild(createFilter('filter-mandatory', 'All Requirements', [{
-                value: '',
-                text: 'All Requirements'
-            }, {
-                value: 'yes',
-                text: 'Mandatory Only'
-            }]));
-
-            const clearBtn = document.createElement('button');
-            clearBtn.id = 'clear-filters-btn';
-            clearBtn.textContent = 'Clear Filters';
-            clearBtn.className = 'btn p-3 rounded-lg bg-gray-200 dark:bg-slate-700 text-sm border border-gray-200 dark:border-slate-600 hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors';
-            wrapper.appendChild(clearBtn);
-
-            container.appendChild(wrapper);
-            const apply = () => this.handleFilterChange();
-            search.addEventListener('input', apply);
-            container.querySelectorAll('select').forEach(sel => sel.addEventListener('change', apply));
-            clearBtn.addEventListener('click', () => {
-                search.value = '';
-                container.querySelectorAll('select').forEach(sel => sel.value = '');
-                apply();
-            });
-        },
-
-        handleFilterChange() {
-            const search = (document.getElementById('filter-search')?.value || '').toLowerCase();
-            const section = document.getElementById('filter-section')?.value || '';
-            const type = document.getElementById('filter-type')?.value || '';
-            const mandatory = document.getElementById('filter-mandatory')?.value || '';
-            this.state.filteredData = this.state.finalData.filter(item => {
-                const searchMatch = !search || (item.layoutLabel || '').toLowerCase().includes(search) || ((item.dbInfo?.Label || '').toLowerCase().includes(search));
-                const sectionMatch = !section || (item.section === section);
-                const typeMatch = !type || (type === 'custom' ? String(item.originalId || '').startsWith('cust_') : !String(item.originalId || '').startsWith('cust_'));
-                const mandatoryMatch = !mandatory || (item.layouts?.newEdit?.isRequired === 'Yes');
-                return searchMatch && sectionMatch && typeMatch && mandatoryMatch;
-            });
-            this.renderResults(this.state.filteredData, this.state.finalData);
-        },
-
-        setupFileHandler(drop, input, callback) {
-            drop.addEventListener('click', () => input.click());
-            input.addEventListener('change', e => {
-                if (e.target.files[0]) callback(e.target.files[0]);
-            });
-            drop.addEventListener('dragover', e => {
-                e.preventDefault();
-                drop.classList.add('dragover');
-            });
-            drop.addEventListener('dragleave', e => {
-                e.preventDefault();
-                drop.classList.remove('dragover');
-            });
-            drop.addEventListener('drop', e => {
-                e.preventDefault();
-                drop.classList.remove('dragover');
-                if (e.dataTransfer.files[0]) callback(e.dataTransfer.files[0]);
-            });
-        }
-    };
-
-    /***** Parser - synchronous but defensive *****/
-    const Parser = {
-        run(task, xml) {
-            return new Promise((resolve, reject) => {
-                try {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(xml, 'application/xml');
-                    if (doc.querySelector('parsererror')) throw new Error('XML parse error. Ensure you saved the DB cell content exactly as XML.');
-                    if (task === 'parseCombined') {
-                        const finalOutput = doc.querySelector('FinalOutput');
-                        if (!finalOutput) throw new Error('Missing <FinalOutput> root in XML.');
-                        const layoutsNode = finalOutput.querySelector('Layouts');
-                        const cardsNode = finalOutput.querySelector('Cards');
-                        const fieldsNode = finalOutput.querySelector('Fields');
-                        if (!layoutsNode) throw new Error('Missing <Layouts> inside <FinalOutput>.');
-                        const cardMap = cardsNode ? this._parseCardXml(cardsNode) : new Map();
-                        const dbMap = fieldsNode ? this._parseDbXml(fieldsNode) : new Map();
-                        const layoutResult = this._parseLayouts(layoutsNode, cardMap);
-                        resolve({
-                            masterFieldMap: layoutResult.masterFieldMap,
-                            profileMapping: layoutResult.profileMapping,
-                            cards: layoutResult.cards,
-                            buttons: layoutResult.buttons,
-                            dbData: dbMap
-                        });
-                        return;
-                    }
-                    reject(new Error('Unknown parser task: ' + task));
-                } catch (err) {
-                    reject(err);
-                }
-            });
-        },
-        _parseCardXml(cardsNode) {
-            const map = new Map();
-            cardsNode.querySelectorAll('Card').forEach(c => {
-                const cardId = c.getAttribute('CardID') || c.getAttribute('CardId') || c.getAttribute('cardid');
-                const xml = c.querySelector('CardXML')?.textContent;
-                if (cardId && xml) map.set(cardId, xml);
-            });
-            return map;
-        },
-        _parseDbXml(fieldsNode) {
-            const map = new Map();
-            fieldsNode.querySelectorAll('Field').forEach(fn => {
-                const id = fn.querySelector('FIELDID')?.textContent?.trim();
-                if (!id) return;
-                const label = fn.querySelector('LABEL')?.textContent || fn.querySelector('Label')?.textContent || null;
-                const ftype = fn.querySelector('FieldType')?.textContent || fn.querySelector('Fieldtype')?.textContent || null;
-                const length = fn.querySelector('LENGTH')?.textContent || null;
-                const def = fn.querySelector('DEFAULTVALUE')?.textContent || null;
-                const tname = fn.querySelector('TABLENAME')?.textContent || null;
-                const fname = fn.querySelector('FIELDNAME')?.textContent || null;
-                const lovsText = fn.querySelector('LOVS')?.textContent?.trim() || null;
-                const lovs = lovsText ? lovsText.split(/,\s*/) : null;
-                map.set(id, {
-                    FieldID: id,
-                    Label: label,
-                    FieldType: ftype,
-                    Length: length,
-                    DefaultValue: def,
-                    TableName: tname,
-                    FieldName: fname,
-                    ColumnName: (tname && fname) ? `${tname}.${fname}` : ((tname || fname) ? `${tname || ''}${fname || ''}` : 'N/A'),
-                    LOVS: lovs
-                });
-            });
-            return map;
-        },
-        _parseLayouts(layoutsNode, cardMap) {
-            const masterFieldMap = new Map();
-            const profileMapping = new Map();
-            const cards = new Map();
-            const buttons = new Map();
-            const groupDefs = [{
-                group: 'NewEditLayoutsGroup',
-                type: 'newEdit'
-            }, {
-                group: 'DetailLayoutsGroup',
-                type: 'detail'
-            }, {
-                group: 'HistoryLayoutsGroup',
-                type: 'history'
-            }];
-            groupDefs.forEach(g => {
-                layoutsNode.querySelectorAll(`${g.group} > *`).forEach(layoutWrapper => {
-                    const stateID = layoutWrapper.getAttribute('StateID') || layoutWrapper.querySelector('Layout')?.getAttribute('StateID') || layoutWrapper.getAttribute('stateid') || '';
-                    layoutWrapper.querySelectorAll('Layout > LayoutXML').forEach(layoutXMLNode => {
-                        const encoded = layoutXMLNode.textContent;
-                        if (!encoded) return;
-                        const innerDoc = new DOMParser().parseFromString(encoded, 'application/xml');
-                        if (innerDoc.querySelector('parsererror')) return;
-                        const layoutName = innerDoc.documentElement.getAttribute('layoutname') || innerDoc.documentElement.getAttribute('name') || 'Unknown Layout';
-                        const groupId = innerDoc.documentElement.getAttribute('groupid') || null;
-                        const stateName = layoutWrapper.getAttribute('StateName') || '';
-                        if (groupId) {
-                            const profileName = layoutName.split(':').pop().trim();
-                            if (profileName) profileMapping.set(groupId, {
-                                Profile: profileName,
-                                Type: g.type,
-                                GroupID: groupId
-                            });
-                        }
-                        innerDoc.querySelectorAll('control').forEach(ctrl => {
-                            const prop = ctrl.querySelector('property[name="CardName"]') || ctrl.querySelector('property[name=\'CardName\']');
-                            const cardName = prop?.getAttribute('value') || null;
-                            if (cardName) {
-                                cards.set(`${layoutName}-${cardName}-${stateID}`, {
-                                    Name: cardName,
-                                    Layout: layoutName,
-                                    StateID: stateID,
-                                    StateName: stateName
-                                });
-                            }
-                        });
-                        innerDoc.querySelectorAll('button[iscustom="1"], button[isCustom="1"], button[iscustom="true"]').forEach(btn => {
-                            const id = btn.getAttribute('id') || btn.getAttribute('ID') || (btn.getAttribute('caption') || 'btn_' + Math.random().toString(36).slice(2));
-                            buttons.set(id, {
-                                ID: id,
-                                Caption: btn.getAttribute('caption') || btn.getAttribute('Caption') || '',
-                                Layout: layoutName,
-                                StateID: stateID,
-                                StateName: stateName
-                            });
-                        });
-                        innerDoc.querySelectorAll('section').forEach(section => {
-                            const sectionName = section.querySelector('text > lang')?.getAttribute('text') || section.querySelector('title')?.textContent || 'Unnamed Section';
-                            this._extractFieldsFromSection(section, sectionName, g.type, stateID, stateName, masterFieldMap);
-                        });
-                        if (g.type === 'detail') {
-                            innerDoc.querySelectorAll('control').forEach(ctrl => {
-                                const nameAttr = ctrl.getAttribute('name') || '';
-                                const typeAttr = ctrl.getAttribute('type') || '';
-                                if (nameAttr.toLowerCase() === 'cardview') {
-                                    const controlId = ctrl.getAttribute('controlid') || ctrl.getAttribute('ControlID') || null;
-                                    if (controlId && cardMap.has(controlId)) {
-                                        try {
-                                            const cardXml = cardMap.get(controlId);
-                                            const cardDoc = new DOMParser().parseFromString(cardXml, 'application/xml');
-                                            const cardLayoutNode = cardDoc.querySelector('cardlayout > layout') || cardDoc.querySelector('layout');
-                                            if (cardLayoutNode) {
-                                                cardLayoutNode.querySelectorAll('section').forEach(cs => {
-                                                    const cardSectionName = cs.querySelector('text > lang')?.getAttribute('text') || 'Card Section';
-                                                    const fullSectionName = `Card: ${controlId} - ${cardSectionName}`;
-                                                    this._extractFieldsFromSection(cs, fullSectionName, g.type, stateID, stateName, masterFieldMap);
-                                                });
-                                            }
-                                        } catch (e) { }
-                                    }
-                                }
-                            });
-                        }
+                const headers = Object.keys(flat[0]);
+                const rows = [headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',')];
+                flat.forEach(r => {
+                    const vals = headers.map(h => {
+                        const v = r[h] === null || r[h] === undefined ? '' : String(r[h]);
+                        return `"${v.replace(/"/g, '""')}"`;
                     });
+                    rows.push(vals.join(','));
                 });
-            });
-            return {
-                masterFieldMap,
-                profileMapping,
-                cards,
-                buttons
-            };
-        },
-        _extractFieldsFromSection(sectionNode, sectionName, layoutType, stateID, stateName, masterFieldMap) {
-            sectionNode.querySelectorAll('col').forEach(col => {
-                try {
-                    const origId = col.getAttribute('fieldid') || col.getAttribute('FieldId') || col.getAttribute('fieldId') || null;
-                    if (!origId || origId === 'blankcell') return;
-                    const fieldId = String(origId).startsWith('cust_') ? String(origId).replace('cust_', '') : String(origId);
-                    const key = `${fieldId}-${stateID}`;
-                    if (!masterFieldMap.has(key)) {
-                        masterFieldMap.set(key, {
-                            fieldId: fieldId,
-                            originalId: origId,
-                            layoutLabel: col.querySelector('text > lang')?.getAttribute('text') || col.getAttribute('name') || col.getAttribute('caption') || '',
-                            section: sectionName,
-                            layouts: {},
-                            dependencies: [],
-                            dependencyContexts: [],
-                            visibilityOptions: null,
-                            dbInfo: null,
-                            layoutDefaultValue: col.getAttribute('defvalue') || col.getAttribute('default') || null,
-                            lovs: {
-                                database: null,
-                                layout: null,
-                                dependency: null
-                            },
-                            dependencyCondition: null,
-                            layoutStateID: stateID,
-                            layoutStateName: stateName
-                        });
-                    }
-                    const rec = masterFieldMap.get(key);
-                    rec.layoutLabel = col.querySelector('text > lang')?.getAttribute('text') || col.getAttribute('name') || rec.layoutLabel;
-                    rec.layoutDefaultValue = col.getAttribute('defvalue') || rec.layoutDefaultValue;
-                    const req = col.getAttribute('req');
-                    const readonly = col.getAttribute('readonly');
-                    let isReadOnlyText = 'No';
-                    if (readonly === '1') {
-                        const readonlyType = col.getAttribute('readonlytype');
-                        isReadOnlyText = (readonlyType === '4') ? 'Yes (Once Defined)' : 'Yes';
-                    }
-                    rec.layouts[layoutType] = {
-                        isRequired: (req === '1' || req === '2') ? 'Yes' : 'No',
-                        isReadOnly: isReadOnlyText,
-                        isHidden: col.getAttribute('hide') === '1' ? 'Yes' : 'No'
-                    };
-                    const visNode = col.querySelector('visibility > visibilityoption');
-                    if (visNode) {
-                        const displaynames = visNode.getAttribute('displaynames') || visNode.getAttribute('displayname') || visNode.textContent || '';
-                        rec.visibilityOptions = displaynames ? String(displaynames).split(/,\s*/) : [];
-                    }
-                    const depNode = col.querySelector('dependents');
-                    if (depNode) {
-                        if (!rec.dependencyContexts.includes(layoutType)) rec.dependencyContexts.push(layoutType);
-                        depNode.querySelectorAll('option').forEach(opt => {
-                            const onValue = opt.getAttribute('name') || opt.getAttribute('value') || opt.textContent || '';
-                            const childFields = Array.from(opt.querySelectorAll('dependent')).map(d => d.getAttribute('id')).filter(Boolean);
-                            const existingDep = rec.dependencies.find(d => d.onValue === onValue);
-                            if (existingDep) {
-                                existingDep.childFields.push(...childFields);
-                                existingDep.childFields = Array.from(new Set(existingDep.childFields));
-                            } else {
-                                rec.dependencies.push({
-                                    onValue,
-                                    childFields
-                                });
-                            }
-                        });
-                    }
-                } catch (e) {
-                    console.warn('Error extracting field in section', e);
+                const csv = rows.join('\r\n');
+                this._triggerDownload(csv, 'Layout_Analysis.csv', 'text/csv;charset=utf-8;');
+            },
+            _downloadExcel(state) {
+                const dataToExport = state.filteredData || state.finalData;
+                if (!dataToExport || dataToExport.length === 0) {
+                    UI.renderError('No data to export.');
+                    return;
                 }
-            });
-        }
-    };
-
-    /***** Exporter *****/
-    const Exporter = {
-        download(type) {
-            const data = App.state.filteredData || App.state.finalData;
-            if (type === 'csv') this._downloadCsv(data);
-            else if (type === 'excel') this._downloadExcel(App.state);
-        },
-        _flattenData(data) {
-            return data.map(item => {
-                const na = {
-                    isRequired: 'N/A',
-                    isReadOnly: 'N/A',
-                    isHidden: 'N/A'
-                };
-                const newEdit = item.layouts.newEdit || na;
-                const detail = item.layouts.detail;
-                const history = item.layouts.history;
-                const db = item.dbInfo || {};
-                let defaultValues = [];
-                if (item.layoutDefaultValue) defaultValues.push(`Layout: ${item.layoutDefaultValue}`);
-                if (db.DefaultValue) defaultValues.push(`Field: ${db.DefaultValue}`);
-                const combinedDefaultValue = defaultValues.length > 0 ? defaultValues.join(', ') : '-';
-                let combinedLovs = '-';
-                if (item.lovs && item.lovs.layout && item.lovs.layout.length > 0) combinedLovs = item.lovs.layout.join(' | ');
-                else if (item.lovs && item.lovs.database && item.lovs.database.length > 0) combinedLovs = item.lovs.database.join(' | ');
-                const type = String(item.originalId || '').startsWith('cust_') ? 'Custom' : 'System';
-
-                return {
-                    'Layout Label': item.layoutLabel,
-                    'DB Field Label': db.Label || '-',
-                    'Type': type,
-                    'Field ID': item.fieldId,
-                    'Layout State ID': item.layoutStateID || '-',
-                    'Layout State Name': item.layoutStateName || '-',
-                    'Data Type': db.FieldType || 'N/A',
-                    'Default Value': combinedDefaultValue,
-                    'Length': db.Length || '-',
-                    'Column Name': db.ColumnName || 'N/A',
-                    'New/Edit - Required': newEdit.isRequired,
-                    'New/Edit - ReadOnly': newEdit.isReadOnly,
-                    'New/Edit - Hidden': newEdit.isHidden,
-                    'Detail Status': detail ? (detail.isHidden === 'Yes' ? 'H' : 'D') : 'N/A',
-                    'History Status': history ? (history.isHidden === 'Yes' ? 'H' : 'D') : 'N/A',
-                    'LOVs': combinedLovs,
-                    'Dependency Condition': item.dependencyCondition || (item._isChild ? 'Child field (orphaned/parent in another state?)' : 'None')
-                };
-            });
-        },
-        _downloadCsv(data) {
-            const flat = this._flattenData(data || []);
-            if (flat.length === 0) {
-                UI.renderError('No data to export.');
-                return;
-            }
-            const headers = Object.keys(flat[0]);
-            const rows = [headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',')];
-            flat.forEach(r => {
-                const vals = headers.map(h => {
-                    const v = r[h] === null || r[h] === undefined ? '' : String(r[h]);
-                    return `"${v.replace(/"/g, '""')}"`;
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(this._flattenData(dataToExport)), 'Field Analysis');
+                if (state.buttons && state.buttons.size > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Array.from(state.buttons.values())), 'Custom Buttons');
+                if (state.cards && state.cards.size > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Array.from(state.cards.values())), 'UI Cards');
+                XLSX.writeFile(wb, 'Layout_Analysis_Report.xlsx');
+            },
+            _triggerDownload(content, filename, mime) {
+                const a = document.createElement('a');
+                const blob = new Blob([content], {
+                    type: mime
                 });
-                rows.push(vals.join(','));
-            });
-            const csv = rows.join('\r\n');
-            this._triggerDownload(csv, 'Layout_Analysis.csv', 'text/csv;charset=utf-8;');
-        },
-        _downloadExcel(state) {
-            const dataToExport = state.filteredData || state.finalData;
-            if (!dataToExport || dataToExport.length === 0) {
-                UI.renderError('No data to export.');
-                return;
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
             }
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(this._flattenData(dataToExport)), 'Field Analysis');
-            if (state.buttons && state.buttons.size > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Array.from(state.buttons.values())), 'Custom Buttons');
-            if (state.cards && state.cards.size > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Array.from(state.cards.values())), 'UI Cards');
-            XLSX.writeFile(wb, 'Layout_Analysis_Report.xlsx');
-        },
-        _triggerDownload(content, filename, mime) {
-            const a = document.createElement('a');
-            const blob = new Blob([content], {
-                type: mime
-            });
-            a.href = URL.createObjectURL(blob);
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-    };
+        };
 
-    /***** Dark mode and back-to-top *****/
-    const ThemeSwitcher = {
-        init() {
-            this.select = document.getElementById('color-theme-select');
-            this.select.addEventListener('change', (e) => this.setTheme(e.target.value));
-            const savedTheme = localStorage.getItem('app-theme') || 'default';
-            this.select.value = savedTheme;
-            this.setTheme(savedTheme);
-        },
-        setTheme(theme) {
-            document.documentElement.classList.remove('theme-emerald', 'theme-rose');
-            if (theme !== 'default') {
-                document.documentElement.classList.add(`theme-${theme}`);
+        /***** Dark mode and back-to-top *****/
+        const ThemeSwitcher = {
+            init() {
+                this.select = document.getElementById('color-theme-select');
+                this.select.addEventListener('change', (e) => this.setTheme(e.target.value));
+                const savedTheme = localStorage.getItem('app-theme') || 'system';
+                this.select.value = savedTheme;
+                this.setTheme(savedTheme);
+            },
+            setTheme(theme) {
+                document.documentElement.className = '';
+                const themeMap = {
+                    'system': window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+                    'cyberpunk': 'dark theme-cyberpunk',
+                    'dracula': 'dark theme-dracula',
+                    'retro-arcade': 'dark theme-retro-arcade',
+                    'atom-one-light': 'light theme-atom-one-light',
+                    'bluloco-light': 'light theme-bluloco-light',
+                    'snazzy-light': 'light theme-snazzy-light'
+                };
+                document.documentElement.className = themeMap[theme];
+                localStorage.setItem('app-theme', theme);
             }
-            localStorage.setItem('app-theme', theme);
-        }
-    };
+        };
 
-    const DarkMode = {
-        init() {
-            this.btn = document.getElementById('dark-mode-toggle');
-            this.iconLight = document.getElementById('icon-light');
-            this.iconDark = document.getElementById('icon-dark');
-            const preferDark = localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-            if (preferDark) this.setDark();
-            else this.setLight();
-            this.btn.addEventListener('click', () => this.toggle());
-        },
-        toggle() {
-            if (document.documentElement.classList.contains('dark')) {
-                this.setLight();
-                localStorage.theme = 'light';
-            } else {
-                this.setDark();
-                localStorage.theme = 'dark';
+        const DarkMode = {
+            init() {
+                this.btn = document.getElementById('dark-mode-toggle');
+                this.iconLight = document.getElementById('icon-light');
+                this.iconDark = document.getElementById('icon-dark');
+                
+                const currentTheme = localStorage.getItem('app-theme') || 'system';
+                const isLight = (currentTheme.includes('light') || (currentTheme === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches));
+
+                if (isLight) this.setLight();
+                else this.setDark();
+
+                this.btn.addEventListener('click', () => this.toggle());
+            },
+            toggle() {
+                const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+                const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                
+                if (nextTheme === 'dark') {
+                    ThemeSwitcher.setTheme('cyberpunk');
+                } else {
+                    ThemeSwitcher.setTheme('bluloco-light');
+                }
+                
+                this.updateButton(nextTheme);
+            },
+            updateButton(theme) {
+                if (theme === 'dark') {
+                    this.iconLight.classList.add('hidden');
+                    this.iconDark.classList.remove('hidden');
+                } else {
+                    this.iconDark.classList.add('hidden');
+                    this.iconLight.classList.remove('hidden');
+                }
+            },
+            setDark() {
+                document.documentElement.classList.add('dark');
+                this.updateButton('dark');
+            },
+            setLight() {
+                document.documentElement.classList.remove('dark');
+                this.updateButton('light');
             }
-        },
-        setDark() {
-            document.documentElement.classList.add('dark');
-            this.iconLight.classList.add('hidden');
-            this.iconDark.classList.remove('hidden');
-        },
-        setLight() {
-            document.documentElement.classList.remove('dark');
-            this.iconDark.classList.add('hidden');
-            this.iconLight.classList.remove('hidden');
-        }
-    };
+        };
 
-    const BackToTop = {
-        init() {
-            this.btn = document.getElementById('back-to-top');
-            window.addEventListener('scroll', () => this.onScroll());
-            this.btn.addEventListener('click', () => window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            }));
-        },
-        onScroll() {
-            if (window.scrollY > 300) this.btn.style.display = 'block';
-            else this.btn.style.display = 'none';
-        }
-    };
+        const BackToTop = {
+            init() {
+                this.btn = document.getElementById('back-to-top');
+                window.addEventListener('scroll', () => this.onScroll());
+                this.btn.addEventListener('click', () => window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                }));
+            },
+            onScroll() {
+                if (window.scrollY > 300) this.btn.style.display = 'block';
+                else this.btn.style.display = 'none';
+            }
+        };
 
-    /* -----------------------------------------
-               SQL Generator
-            ------------------------------------------*/
-    const SQLGenerator = {
-        combinedQuery(ids) {
-            return `-- Set your comma-separated Layout IDs here.
+        /* -----------------------------------------
+                   SQL Generator
+                ------------------------------------------*/
+        const SQLGenerator = {
+            combinedQuery(ids) {
+                return `-- Set your comma-separated Layout IDs here.
 DECLARE @LayoutIDs NVARCHAR(MAX) = '${ids}';
 
 DECLARE @LayoutXML XML;
@@ -1717,11 +1855,11 @@ SELECT
     @CardXML AS [Cards],
     @FieldXML AS [Fields]
 FOR XML PATH('FinalOutput'), TYPE;`;
-        }
-    };
+            }
+        };
 
-    /***** App boot *****/
-    document.addEventListener('DOMContentLoaded', () => App.init());
-</script>
+        /***** App boot *****/
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
 </body>
 </html>
