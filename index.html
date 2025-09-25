@@ -72,6 +72,37 @@
             }
         }
 
+        /* NEW: Animation for report rendering state */
+        @keyframes dot-pulse {
+            0%, 100% {
+                opacity: 0.3;
+                transform: scale(0.8);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        .dot-pulse {
+            width: 10px;
+            height: 10px;
+            background-color: var(--primary-start);
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 4px;
+            animation: dot-pulse 1s infinite ease-in-out both;
+        }
+        .dot-pulse:nth-child(1) {
+            animation-delay: 0s;
+        }
+        .dot-pulse:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .dot-pulse:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        /* END NEW */
+
         /* Base Light Theme */
         :root, .light {
             --primary-start: #5a5f73;
@@ -894,6 +925,20 @@
                 this.renderStep1();
             },
 
+            // NEW FUNCTION: Scrolls to the report section with a smooth animation.
+            scrollToReport() {
+                const resultsSection = document.getElementById('main-content').lastElementChild;
+                if (resultsSection) {
+                    // Use a slight delay to ensure the content has fully rendered before scrolling
+                    setTimeout(() => {
+                        resultsSection.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start' // Scroll so the top of the element is visible
+                        });
+                    }, 50); 
+                }
+            },
+            
             updateMilestones(step) {
                 const tracker = document.getElementById('milestone-tracker');
                 
@@ -1006,13 +1051,26 @@
 
                     this.finalizeData(parsed.dbData || new Map());
 
-                    const finalCard = UI.createStep(`<div class="p-6 text-center" style="color:var(--text-muted-color);">Analysis complete — rendering report...</div>`);
+                    // NEW: Use dynamic animation and trigger auto-scroll
+                    const animationHtml = `
+                        <div class="p-8 text-center flex flex-col items-center justify-center">
+                            <h3 class="text-xl font-bold mb-4" style="color:var(--primary-start);">Analysis Complete!</h3>
+                            <div class="flex items-center">
+                                <span class="text-lg mr-4" style="color:var(--text-muted-color);">Rendering Report...</span>
+                                <div class="dot-pulse"></div>
+                                <div class="dot-pulse" style="animation-delay: 0.2s;"></div>
+                                <div class="dot-pulse" style="animation-delay: 0.4s;"></div>
+                            </div>
+                        </div>
+                    `;
+                    const finalCard = UI.createStep(animationHtml);
                     finalCard.classList.add('final-animation');
                     
                     setTimeout(() => {
                         this.renderInitialReport();
-                        this.scrollToReport();
-                    }, 300);
+                        this.scrollToReport(); // Auto-scroll is triggered here
+                        finalCard.remove(); 
+                    }, 1000); // 1 second delay to showcase the animation
                     
                     const perfEl = document.getElementById('perf-metrics');
                     if (perfEl) perfEl.textContent = `Parsed and rendered in ${this.state.parseTime} seconds.`;
